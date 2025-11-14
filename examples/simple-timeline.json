@@ -1,0 +1,36 @@
+{
+  "events": [
+    {
+      "id": "event-1",
+      "name": "Moon Landing",
+      "time": "1969-07-20T20:17:00Z"
+    },
+    {
+      "id": "event-2",
+      "name": "First iPhone",
+      "time": "2007-06-29"
+    }
+  ],
+  "periods": [
+    {
+      "id": "period-1",
+      "name": "World War II",
+      "startTime": "1939-09-01",
+      "endTime": "1945-09-02"
+    },
+    {
+      "id": "period-2",
+      "name": "Cold War",
+      "startTime": "1947-03-12",
+      "endTime": "1991-12-26"
+    }
+  ],
+  "connectors": [
+    {
+      "id": "connector-1",
+      "fromId": "period-1",
+      "toId": "period-2",
+      "type": "defined"
+    }
+  ]
+}

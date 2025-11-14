@@ -1,0 +1,330 @@
+{
+  "events": [
+    {
+      "id": "event-1",
+      "name": "September 11 Attacks",
+      "time": "2001-09-11T08:46:00Z",
+      "metadata": {
+        "category": "tragedy",
+        "location": "New York, USA"
+      }
+    },
+    {
+      "id": "event-2",
+      "name": "Facebook Launch",
+      "time": "2004-02-04T00:00:00Z",
+      "metadata": {
+        "category": "technology",
+        "company": "Meta"
+      }
+    },
+    {
+      "id": "event-3",
+      "name": "YouTube Founded",
+      "time": "2005-02-14T00:00:00Z",
+      "metadata": {
+        "category": "technology"
+      }
+    },
+    {
+      "id": "event-4",
+      "name": "First iPhone Released",
+      "time": "2007-06-29T18:00:00Z",
+      "metadata": {
+        "category": "technology",
+        "company": "Apple"
+      }
+    },
+    {
+      "id": "event-5",
+      "name": "Bitcoin Genesis Block",
+      "time": "2009-01-03T18:15:05Z",
+      "metadata": {
+        "category": "cryptocurrency",
+        "creator": "Satoshi Nakamoto"
+      }
+    },
+    {
+      "id": "event-6",
+      "name": "Arab Spring Begins",
+      "time": "2010-12-17T00:00:00Z",
+      "metadata": {
+        "category": "political",
+        "location": "Tunisia"
+      }
+    },
+    {
+      "id": "event-7",
+      "name": "Fukushima Nuclear Disaster",
+      "time": "2011-03-11T14:46:00Z",
+      "metadata": {
+        "category": "disaster",
+        "location": "Japan"
+      }
+    },
+    {
+      "id": "event-8",
+      "name": "Curiosity Lands on Mars",
+      "time": "2012-08-06T05:17:00Z",
+      "metadata": {
+        "category": "space",
+        "mission": "Mars Science Laboratory"
+      }
+    },
+    {
+      "id": "event-9",
+      "name": "Paris Climate Agreement",
+      "time": "2015-12-12T00:00:00Z",
+      "metadata": {
+        "category": "climate",
+        "location": "Paris, France"
+      }
+    },
+    {
+      "id": "event-10",
+      "name": "Brexit Vote",
+      "time": "2016-06-23T00:00:00Z",
+      "metadata": {
+        "category": "political",
+        "location": "United Kingdom"
+      }
+    },
+    {
+      "id": "event-11",
+      "name": "First Falcon Heavy Launch",
+      "time": "2018-02-06T20:45:00Z",
+      "metadata": {
+        "category": "space",
+        "company": "SpaceX"
+      }
+    },
+    {
+      "id": "event-12",
+      "name": "COVID-19 Declared Pandemic",
+      "time": "2020-03-11T00:00:00Z",
+      "metadata": {
+        "category": "health",
+        "organization": "WHO"
+      }
+    },
+    {
+      "id": "event-13",
+      "name": "James Webb Space Telescope Launch",
+      "time": "2021-12-25T12:20:00Z",
+      "metadata": {
+        "category": "space",
+        "agency": "NASA/ESA"
+      }
+    },
+    {
+      "id": "event-14",
+      "name": "ChatGPT Public Release",
+      "time": "2022-11-30T00:00:00Z",
+      "metadata": {
+        "category": "AI",
+        "company": "OpenAI"
+      }
+    },
+    {
+      "id": "event-15",
+      "name": "Claude 3 Released",
+      "time": "2024-03-04T00:00:00Z",
+      "metadata": {
+        "category": "AI",
+        "company": "Anthropic"
+      }
+    },
+    {
+      "id": "event-16",
+      "name": "First Crewed Mars Mission (Projected)",
+      "time": "2033-01-01T00:00:00Z",
+      "metadata": {
+        "category": "space",
+        "status": "projected",
+        "agency": "NASA/SpaceX"
+      }
+    },
+    {
+      "id": "event-17",
+      "name": "Artemis Moon Base Operational (Projected)",
+      "time": "2035-06-01T00:00:00Z",
+      "metadata": {
+        "category": "space",
+        "status": "projected",
+        "agency": "NASA"
+      }
+    },
+    {
+      "id": "event-18",
+      "name": "Fusion Power Commercialization (Projected)",
+      "time": "2040-01-01T00:00:00Z",
+      "metadata": {
+        "category": "energy",
+        "status": "projected"
+      }
+    },
+    {
+      "id": "event-19",
+      "name": "Net Zero Carbon Emissions Goal",
+      "time": "2050-12-31T23:59:59Z",
+      "metadata": {
+        "category": "climate",
+        "status": "goal",
+        "description": "Paris Agreement target"
+      }
+    }
+  ],
+  "periods": [
+    {
+      "id": "period-1",
+      "name": "War on Terror",
+      "startTime": "2001-09-11",
+      "endTime": "2021-08-30",
+      "metadata": {
+        "category": "military",
+        "description": "US military operations following 9/11"
+      }
+    },
+    {
+      "id": "period-2",
+      "name": "Social Media Era",
+      "startTime": "2004-02-04",
+      "endTime": "2025-12-31",
+      "metadata": {
+        "category": "technology",
+        "description": "Rise of social networking platforms",
+        "ongoing": true
+      }
+    },
+    {
+      "id": "period-3",
+      "name": "Smartphone Revolution",
+      "startTime": "2007-06-29",
+      "endTime": "2025-12-31",
+      "metadata": {
+        "category": "technology",
+        "description": "Mobile computing becomes dominant",
+        "ongoing": true
+      }
+    },
+    {
+      "id": "period-4",
+      "name": "Cryptocurrency Boom",
+      "startTime": "2009-01-03",
+      "endTime": "2025-12-31",
+      "metadata": {
+        "category": "finance",
+        "description": "Digital currencies and blockchain",
+        "ongoing": true
+      }
+    },
+    {
+      "id": "period-5",
+      "name": "Syrian Civil War",
+      "startTime": "2011-03-15",
+      "endTime": "2025-12-31",
+      "metadata": {
+        "category": "conflict",
+        "location": "Syria",
+        "ongoing": true
+      }
+    },
+    {
+      "id": "period-6",
+      "name": "Commercial Space Race",
+      "startTime": "2015-01-01",
+      "endTime": "2050-12-31",
+      "metadata": {
+        "category": "space",
+        "description": "Private companies entering space industry",
+        "ongoing": true
+      }
+    },
+    {
+      "id": "period-7",
+      "name": "COVID-19 Pandemic",
+      "startTime": "2019-12-01",
+      "endTime": "2023-05-05",
+      "metadata": {
+        "category": "health",
+        "description": "Global coronavirus pandemic"
+      }
+    },
+    {
+      "id": "period-8",
+      "name": "AI Renaissance",
+      "startTime": "2022-11-30",
+      "endTime": "2050-12-31",
+      "metadata": {
+        "category": "AI",
+        "description": "Large language models and generative AI",
+        "ongoing": true
+      }
+    },
+    {
+      "id": "period-9",
+      "name": "Artemis Program",
+      "startTime": "2024-01-01",
+      "endTime": "2040-12-31",
+      "metadata": {
+        "category": "space",
+        "description": "Return humans to the Moon",
+        "status": "ongoing"
+      }
+    },
+    {
+      "id": "period-10",
+      "name": "Mars Settlement Era",
+      "startTime": "2033-01-01",
+      "endTime": "2050-12-31",
+      "metadata": {
+        "category": "space",
+        "description": "Human presence on Mars",
+        "status": "projected"
+      }
+    }
+  ],
+  "connectors": [
+    {
+      "id": "connector-1",
+      "fromId": "period-2",
+      "toId": "period-8",
+      "type": "undefined",
+      "metadata": {
+        "description": "Social media platforms enable AI training"
+      }
+    },
+    {
+      "id": "connector-2",
+      "fromId": "period-3",
+      "toId": "period-8",
+      "type": "undefined",
+      "metadata": {
+        "description": "Mobile devices democratize AI access"
+      }
+    },
+    {
+      "id": "connector-3",
+      "fromId": "period-6",
+      "toId": "period-9",
+      "type": "defined",
+      "metadata": {
+        "description": "Commercial space enables Artemis"
+      }
+    },
+    {
+      "id": "connector-4",
+      "fromId": "period-9",
+      "toId": "period-10",
+      "type": "defined",
+      "metadata": {
+        "description": "Moon base enables Mars missions"
+      }
+    }
+  ],
+  "config": {
+    "initialStartTime": "2000-01-01",
+    "initialEndTime": "2050-12-31",
+    "theme": "light"
+  }
+}

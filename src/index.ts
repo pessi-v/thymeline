@@ -1,0 +1,30 @@
+/**
+ * Thymeline - Interactive Timeline Renderer
+ * Main entry point
+ */
+
+export { TimelineRenderer } from './renderer/TimelineRenderer';
+
+export type {
+  TimelineData,
+  TimelineEvent,
+  TimelinePeriod,
+  TimelineConnector,
+  TimelineConfig,
+  RendererOptions,
+  RenderConstraints,
+  TimeInput,
+  NormalizedTime,
+  LaneAssignment,
+  ViewportState,
+  ZoomCallback,
+  PanCallback,
+  ItemClickCallback,
+  ItemHoverCallback,
+} from './core/types';
+
+export { normalizeTime, formatTime, determineTimeScale } from './utils/timeNormalization';
+export { assignLanes, getLaneCount } from './layout/laneAssignment';
+
+// Default export
+export { TimelineRenderer as default } from './renderer/TimelineRenderer';

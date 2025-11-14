@@ -1,0 +1,56 @@
+{
+  "name": "thymeline",
+  "version": "0.1.0",
+  "description": "A standalone TypeScript library that renders interactive, zoomable timelines spanning from geological to modern time scales",
+  "type": "module",
+  "main": "./dist/thymeline.umd.cjs",
+  "module": "./dist/thymeline.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/thymeline.js",
+      "require": "./dist/thymeline.umd.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "timeline",
+    "visualization",
+    "svg",
+    "typescript",
+    "interactive",
+    "chart",
+    "history",
+    "geology",
+    "events"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "@vitest/coverage-v8": "^4.0.8",
+    "@vitest/ui": "^4.0.0",
+    "jsdom": "^27.2.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.0.5",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^4.0.0"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}

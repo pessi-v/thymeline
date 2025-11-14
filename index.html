@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Thymeline - Timeline Renderer Demo</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        background: #f5f5f5;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        color: #333;
+      }
+
+      p {
+        color: #666;
+        margin-bottom: 2rem;
+      }
+
+      #timeline-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        min-height: 500px;
+      }
+
+      .controls {
+        margin-bottom: 1rem;
+        display: flex;
+        gap: 10px;
+      }
+
+      button {
+        padding: 8px 16px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      button:hover {
+        background: #0056b3;
+      }
+
+      .info {
+        margin-top: 1rem;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 4px;
+        font-size: 14px;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Thymeline Demo</h1>
+      <p>Interactive timeline renderer spanning from geological to modern time scales</p>
+
+      <div class="controls">
+        <label for="timeline-selector" style="margin-right: 10px;">
+          <strong>Timeline:</strong>
+          <select id="timeline-selector" style="margin-left: 5px; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+            <option value="examples/timeline-data.json">Full History (Geological to Modern)</option>
+            <option value="examples/modern-future.json">Modern & Future (2000-2050)</option>
+            <option value="examples/simple-timeline.json">Simple Example</option>
+          </select>
+        </label>
+        <button id="pan-left">← Pan Left</button>
+        <button id="zoom-out">Zoom Out</button>
+        <button id="reset">Reset View</button>
+        <button id="zoom-in">Zoom In</button>
+        <button id="pan-right">Pan Right →</button>
+      </div>
+
+      <div id="timeline-container"></div>
+
+      <div class="info">
+        <strong>Status:</strong> <span id="status">Initializing...</span>
+        <br>
+        <strong>Debug:</strong> <span id="debug-info" style="font-family: monospace; font-size: 12px;">-</span>
+      </div>
+    </div>
+
+    <script type="module">
+      import { TimelineRenderer } from './src/index.ts';
+
+      // Function to load a timeline
+      function loadTimeline(url) {
+        document.getElementById('status').textContent = 'Loading timeline...';
+
+        fetch(url)
+          .then(res => res.json())
+          .then(timelineData => {
+            // Destroy existing renderer if it exists
+            if (window.renderer) {
+              window.renderer.destroy();
+            }
+
+            // Initialize renderer with config from data, or use defaults
+            const config = timelineData.config || {};
+            const renderer = new TimelineRenderer('#timeline-container', {
+              width: config.width || 1160,
+              height: config.height || 500,
+              initialStartTime: config.initialStartTime || { year: 100, era: 'BCE' },
+              initialEndTime: config.initialEndTime || new Date().toISOString(),
+              theme: config.theme || 'light',
+              constraints: config.constraints,
+            });
+
+            // Set up event listeners for this renderer
+            renderer.on('zoom', (level) => {
+              updateStatus();
+            });
+
+            renderer.on('pan', (centerTime) => {
+              updateStatus();
+            });
+
+            // Render timeline
+            renderer.render(timelineData);
+
+            // Make renderer available for controls
+            window.renderer = renderer;
+
+            document.getElementById('status').textContent =
+              `Timeline loaded: ${timelineData.events.length} events, ${timelineData.periods.length} periods`;
+
+            updateStatus();
+          })
+          .catch(err => {
+            document.getElementById('status').textContent = 'Error loading timeline data: ' + err.message;
+            console.error('Error loading timeline:', err);
+          });
+      }
+
+      // Load initial timeline
+      loadTimeline('./examples/timeline-data.json');
+
+      // Set up timeline selector
+      document.getElementById('timeline-selector').addEventListener('change', (e) => {
+        loadTimeline(e.target.value);
+      });
+
+      // Set up controls
+      document.getElementById('zoom-in').addEventListener('click', () => {
+        window.renderer?.zoomIn();
+      });
+
+      document.getElementById('zoom-out').addEventListener('click', () => {
+        window.renderer?.zoomOut();
+      });
+
+      document.getElementById('pan-left').addEventListener('click', () => {
+        window.renderer?.panBy(-200); // Pan left (negative pixels)
+      });
+
+      document.getElementById('pan-right').addEventListener('click', () => {
+        window.renderer?.panBy(200); // Pan right (positive pixels)
+      });
+
+      document.getElementById('reset').addEventListener('click', () => {
+        if (window.renderer) {
+          const vp = window.renderer.getViewport();
+          // Reset to initial viewport based on loaded data
+          const selector = document.getElementById('timeline-selector');
+          loadTimeline(selector.value);
+        }
+      });
+
+      // Update status display
+      function updateStatus() {
+        if (window.renderer) {
+          const vp = window.renderer.getViewport();
+          const range = (vp.endTime - vp.startTime).toExponential(2);
+
+          // Update main status
+          const statusText = document.getElementById('status').textContent;
+          if (!statusText.includes('Timeline loaded:')) {
+            document.getElementById('status').textContent =
+              `Viewing range: ${range} years | Center: ${vp.centerTime.toFixed(0)}`;
+          }
+
+          // Update debug info
+          document.getElementById('debug-info').textContent =
+            `Zoom Level: ${vp.zoomLevel.toFixed(4)}x | ` +
+            `Start: ${vp.startTime.toFixed(2)} | ` +
+            `End: ${vp.endTime.toFixed(2)}`;
+        }
+      }
+    </script>
+  </body>
+</html>
