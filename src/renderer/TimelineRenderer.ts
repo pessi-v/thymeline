@@ -119,19 +119,20 @@ export class TimelineRenderer {
     this.updateView();
   }
 
-  setZoomLevel(level: number): void {
+  setZoomLevel(level: number, centerTime?: number): void {
     if (!this.data) return;
 
     const oldZoomLevel = this.viewport.zoomLevel;
     const oldRange = this.viewport.endTime - this.viewport.startTime;
+
+    // If centerTime is provided, use it; otherwise keep current center
+    const targetCenter = centerTime !== undefined ? centerTime : this.viewport.centerTime;
 
     // Calculate the maximum zoom out level (showing all data)
     const { minTime, maxTime } = this.calculateDataTimeRange(this.data);
     const fullDataRange = maxTime - minTime;
 
     // Calculate the minimum zoom level that shows all data
-    // When zoomed to 1.0, we show the full range
-    // We need to prevent zooming out beyond showing all data
     const currentViewRange = this.viewport.endTime - this.viewport.startTime;
     const dynamicMinZoom = Math.min(this.options.minZoom, oldZoomLevel * (currentViewRange / fullDataRange));
 
@@ -155,8 +156,10 @@ export class TimelineRenderer {
     // Ensure we don't zoom out beyond the full data range
     newRange = Math.min(newRange, fullDataRange * 1.05); // 5% padding
 
-    this.viewport.startTime = this.viewport.centerTime - newRange / 2;
-    this.viewport.endTime = this.viewport.centerTime + newRange / 2;
+    // Center on target time
+    this.viewport.centerTime = targetCenter;
+    this.viewport.startTime = targetCenter - newRange / 2;
+    this.viewport.endTime = targetCenter + newRange / 2;
 
     // Clamp viewport to not go beyond data range (with small padding)
     const padding = fullDataRange * 0.025; // 2.5% padding on each side
@@ -316,7 +319,7 @@ export class TimelineRenderer {
   }
 
   /**
-   * Set up mouse drag to pan
+   * Set up mouse drag to pan and double-click to zoom
    */
   private setupDragToPan(): void {
     if (!this.svg) return;
@@ -324,8 +327,21 @@ export class TimelineRenderer {
     let isDragging = false;
     let startX = 0;
     let startCenterTime = 0;
+    let lastClickTime = 0;
 
     this.svg.addEventListener('mousedown', (e) => {
+      const currentTime = Date.now();
+      const timeSinceLastClick = currentTime - lastClickTime;
+
+      // Check for double-click (within 300ms)
+      if (timeSinceLastClick < 300) {
+        // Double-click detected - zoom in centered on click position
+        this.handleDoubleClick(e);
+        lastClickTime = 0; // Reset to prevent triple-click
+        return;
+      }
+
+      lastClickTime = currentTime;
       isDragging = true;
       startX = e.clientX;
       startCenterTime = this.viewport.centerTime;
@@ -367,6 +383,33 @@ export class TimelineRenderer {
         this.zoomOut();
       }
     });
+  }
+
+  /**
+   * Handle double-click to zoom in centered on click position
+   */
+  private handleDoubleClick(e: MouseEvent): void {
+    if (!this.svg) return;
+
+    // Get the click position relative to the SVG
+    const rect = this.svg.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+
+    // Convert pixel position to time
+    const clickedTime = this.xToTime(clickX);
+
+    // Zoom in one level, centered on the clicked time
+    const newZoomLevel = this.viewport.zoomLevel * 1.5;
+    this.setZoomLevel(newZoomLevel, clickedTime);
+  }
+
+  /**
+   * Convert pixel position to time
+   */
+  private xToTime(x: number): number {
+    const timeRange = this.viewport.endTime - this.viewport.startTime;
+    const timeProgress = x / this.options.width;
+    return this.viewport.startTime + timeRange * timeProgress;
   }
 
   private updateView(): void {
