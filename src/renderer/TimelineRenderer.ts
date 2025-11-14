@@ -76,6 +76,15 @@ export class TimelineRenderer {
   render(timelineData: TimelineData): void {
     this.data = timelineData;
 
+    // Calculate the full time range of all data
+    const { minTime, maxTime } = this.calculateDataTimeRange(timelineData);
+
+    // Update viewport to show full range initially
+    this.viewport.startTime = minTime;
+    this.viewport.endTime = maxTime;
+    this.viewport.centerTime = (minTime + maxTime) / 2;
+    this.viewport.zoomLevel = 1;
+
     // Assign lanes
     const assignments = assignLanes(timelineData.periods, timelineData.events);
 
@@ -111,12 +120,24 @@ export class TimelineRenderer {
   }
 
   setZoomLevel(level: number): void {
+    if (!this.data) return;
+
     const oldZoomLevel = this.viewport.zoomLevel;
     const oldRange = this.viewport.endTime - this.viewport.startTime;
 
+    // Calculate the maximum zoom out level (showing all data)
+    const { minTime, maxTime } = this.calculateDataTimeRange(this.data);
+    const fullDataRange = maxTime - minTime;
+
+    // Calculate the minimum zoom level that shows all data
+    // When zoomed to 1.0, we show the full range
+    // We need to prevent zooming out beyond showing all data
+    const currentViewRange = this.viewport.endTime - this.viewport.startTime;
+    const dynamicMinZoom = Math.min(this.options.minZoom, oldZoomLevel * (currentViewRange / fullDataRange));
+
     // Clamp the new zoom level
     const newZoomLevel = Math.max(
-      this.options.minZoom,
+      dynamicMinZoom,
       Math.min(this.options.maxZoom, level)
     );
 
@@ -129,9 +150,28 @@ export class TimelineRenderer {
 
     // Adjust time range based on zoom level change (inverse relationship)
     // Higher zoom = smaller range (more zoomed in)
-    const newRange = oldRange * (oldZoomLevel / newZoomLevel);
+    let newRange = oldRange * (oldZoomLevel / newZoomLevel);
+
+    // Ensure we don't zoom out beyond the full data range
+    newRange = Math.min(newRange, fullDataRange * 1.05); // 5% padding
+
     this.viewport.startTime = this.viewport.centerTime - newRange / 2;
     this.viewport.endTime = this.viewport.centerTime + newRange / 2;
+
+    // Clamp viewport to not go beyond data range (with small padding)
+    const padding = fullDataRange * 0.025; // 2.5% padding on each side
+    if (this.viewport.startTime < minTime - padding) {
+      const shift = (minTime - padding) - this.viewport.startTime;
+      this.viewport.startTime += shift;
+      this.viewport.endTime += shift;
+      this.viewport.centerTime += shift;
+    }
+    if (this.viewport.endTime > maxTime + padding) {
+      const shift = this.viewport.endTime - (maxTime + padding);
+      this.viewport.startTime -= shift;
+      this.viewport.endTime -= shift;
+      this.viewport.centerTime -= shift;
+    }
 
     this.updateView();
     this.emit('zoom', this.viewport.zoomLevel);
@@ -343,6 +383,44 @@ export class TimelineRenderer {
   }
 
   /**
+   * Calculate the time range that encompasses all data
+   */
+  private calculateDataTimeRange(data: TimelineData): { minTime: number; maxTime: number } {
+    let minTime = Infinity;
+    let maxTime = -Infinity;
+
+    // Check all events
+    for (const event of data.events) {
+      const time = normalizeTime(event.time);
+      minTime = Math.min(minTime, time);
+      maxTime = Math.max(maxTime, time);
+    }
+
+    // Check all periods
+    for (const period of data.periods) {
+      const startTime = normalizeTime(period.startTime);
+      const endTime = normalizeTime(period.endTime);
+      minTime = Math.min(minTime, startTime);
+      maxTime = Math.max(maxTime, endTime);
+    }
+
+    // If no data, use default range
+    if (minTime === Infinity || maxTime === -Infinity) {
+      minTime = normalizeTime(this.options.initialStartTime);
+      maxTime = normalizeTime(this.options.initialEndTime);
+    }
+
+    // Add a small padding (2.5% on each side)
+    const range = maxTime - minTime;
+    const padding = range * 0.025;
+
+    return {
+      minTime: minTime - padding,
+      maxTime: maxTime + padding,
+    };
+  }
+
+  /**
    * Recalculate viewport start/end times based on center and current range
    */
   private recalculateViewportBounds(): void {
@@ -362,10 +440,34 @@ export class TimelineRenderer {
 
   /**
    * Get Y position for a lane
+   * Layout pattern repeats: Period, Event, Event, Event, Period, Event, Event, Event, ...
    */
-  private laneToY(lane: number): number {
-    const { laneHeight, laneGap } = this.options.constraints;
-    return 60 + lane * (laneHeight + laneGap); // 60px offset for time axis
+  private laneToY(lane: number, type?: 'period' | 'event'): number {
+    const periodHeight = this.options.constraints.minPeriodHeight;
+    const eventHeight = 20; // Height of event row
+    const periodGap = 10; // Gap after period row
+    const eventGap = 5; // Gap between event rows
+    const blockGap = 15; // Gap after last event row before next period
+
+    const timeAxisOffset = 60; // Offset for time axis at top
+
+    // Each "block" = 1 period + 3 events
+    // Block height = period + gap + 3*event + 2*eventGap + blockGap
+    const blockHeight = periodHeight + periodGap + (eventHeight * 3) + (eventGap * 2) + blockGap;
+
+    if (type === 'period') {
+      // Period lanes: each period starts a new block
+      return timeAxisOffset + (lane * blockHeight);
+    } else {
+      // Event lanes: 3 events per block
+      const blockIndex = Math.floor(lane / 3);
+      const eventIndexInBlock = lane % 3; // 0, 1, or 2
+
+      const blockStartY = timeAxisOffset + (blockIndex * blockHeight);
+      const eventsStartY = blockStartY + periodHeight + periodGap;
+
+      return eventsStartY + (eventIndexInBlock * (eventHeight + eventGap));
+    }
   }
 
   /**
@@ -421,18 +523,26 @@ export class TimelineRenderer {
     line.setAttribute('stroke-width', '2');
     this.svg.appendChild(line);
 
-    // Time labels (simple version - add a few markers)
+    // Calculate tick positions with margin from edges
+    const margin = 40; // Pixels from edge
+    const usableWidth = this.options.width - (margin * 2);
+    const numMarkers = 10; // Increased from 5 to 10
     const timeRange = this.viewport.endTime - this.viewport.startTime;
-    const numMarkers = 5;
+
     for (let i = 0; i <= numMarkers; i++) {
-      const time = this.viewport.startTime + (timeRange / numMarkers) * i;
-      const x = this.timeToX(time);
+      // Calculate position with margin
+      const pixelPosition = margin + (usableWidth / numMarkers) * i;
+
+      // Calculate corresponding time value
+      // Map pixel position back to time
+      const timeProgress = (pixelPosition - 0) / this.options.width;
+      const time = this.viewport.startTime + timeRange * timeProgress;
 
       // Tick mark
       const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      tick.setAttribute('x1', x.toString());
+      tick.setAttribute('x1', pixelPosition.toString());
       tick.setAttribute('y1', '40');
-      tick.setAttribute('x2', x.toString());
+      tick.setAttribute('x2', pixelPosition.toString());
       tick.setAttribute('y2', '50');
       tick.setAttribute('stroke', '#666');
       tick.setAttribute('stroke-width', '1');
@@ -440,10 +550,10 @@ export class TimelineRenderer {
 
       // Label
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text.setAttribute('x', x.toString());
+      text.setAttribute('x', pixelPosition.toString());
       text.setAttribute('y', '25');
       text.setAttribute('text-anchor', 'middle');
-      text.setAttribute('font-size', '12');
+      text.setAttribute('font-size', '11');
       text.setAttribute('fill', '#333');
       text.textContent = this.formatTimeLabel(time);
       this.svg.appendChild(text);
@@ -476,21 +586,21 @@ export class TimelineRenderer {
 
     const startX = this.timeToX(assignment.startTime);
     const endX = this.timeToX(assignment.endTime);
-    const y = this.laneToY(assignment.lane);
+    const y = this.laneToY(assignment.lane, 'period');
     const width = Math.max(2, endX - startX);
     const height = this.options.constraints.minPeriodHeight;
 
-    // Period rectangle
+    // Period rectangle with fully rounded ends
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     rect.setAttribute('x', startX.toString());
     rect.setAttribute('y', y.toString());
     rect.setAttribute('width', width.toString());
     rect.setAttribute('height', height.toString());
-    rect.setAttribute('fill', '#007bff');
-    rect.setAttribute('fill-opacity', '0.7');
-    rect.setAttribute('stroke', '#0056b3');
+    rect.setAttribute('fill', '#000');
+    rect.setAttribute('fill-opacity', '0.85');
+    rect.setAttribute('stroke', '#000');
     rect.setAttribute('stroke-width', '1');
-    rect.setAttribute('rx', '4');
+    rect.setAttribute('rx', (height / 2).toString()); // Fully rounded ends
     this.svg.appendChild(rect);
 
     // Label (if there's enough space)
@@ -517,33 +627,22 @@ export class TimelineRenderer {
     if (!assignment) return;
 
     const x = this.timeToX(assignment.startTime);
-    const y = this.laneToY(assignment.lane);
-    const height = this.options.constraints.minPeriodHeight;
+    const y = this.laneToY(assignment.lane, 'event');
+    const height = 20; // Event row height
 
-    // Event marker (circle)
+    // Event marker (hollow circle, smaller)
     const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     circle.setAttribute('cx', x.toString());
     circle.setAttribute('cy', (y + height / 2).toString());
-    circle.setAttribute('r', '6');
-    circle.setAttribute('fill', '#dc3545');
-    circle.setAttribute('stroke', '#bd2130');
+    circle.setAttribute('r', '4');
+    circle.setAttribute('fill', 'none');
+    circle.setAttribute('stroke', '#000');
     circle.setAttribute('stroke-width', '2');
     this.svg.appendChild(circle);
 
-    // Vertical line
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', x.toString());
-    line.setAttribute('y1', y.toString());
-    line.setAttribute('x2', x.toString());
-    line.setAttribute('y2', (y + height).toString());
-    line.setAttribute('stroke', '#dc3545');
-    line.setAttribute('stroke-width', '2');
-    line.setAttribute('stroke-dasharray', '2,2');
-    this.svg.appendChild(line);
-
     // Label
     const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    text.setAttribute('x', (x + 10).toString());
+    text.setAttribute('x', (x + 8).toString());
     text.setAttribute('y', (y + height / 2 + 4).toString());
     text.setAttribute('font-size', '10');
     text.setAttribute('fill', '#333');
@@ -569,8 +668,8 @@ export class TimelineRenderer {
     const connectionTime = Math.min(fromAssignment.endTime, toAssignment.startTime);
     const fromX = this.timeToX(connectionTime);
     const toX = this.timeToX(toAssignment.startTime);
-    const fromY = this.laneToY(fromAssignment.lane) + this.options.constraints.minPeriodHeight / 2;
-    const toY = this.laneToY(toAssignment.lane) + this.options.constraints.minPeriodHeight / 2;
+    const fromY = this.laneToY(fromAssignment.lane, fromAssignment.type) + this.options.constraints.minPeriodHeight / 2;
+    const toY = this.laneToY(toAssignment.lane, toAssignment.type) + this.options.constraints.minPeriodHeight / 2;
 
     // Simple line connector
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');

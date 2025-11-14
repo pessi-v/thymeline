@@ -105,6 +105,7 @@ export interface LaneAssignment {
   lane: number;
   startTime: NormalizedTime;
   endTime: NormalizedTime;
+  type?: 'period' | 'event';
 }
 
 /**
