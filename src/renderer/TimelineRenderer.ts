@@ -562,7 +562,12 @@ export class TimelineRenderer {
 
     if (!fromAssignment || !toAssignment) return;
 
-    const fromX = this.timeToX(fromAssignment.endTime);
+    // Calculate the connection point on the "from" period
+    // If "to" starts before "from" ends (overlapping periods),
+    // connect at the point where "to" begins, not at the end of "from"
+    // This prevents connectors from going backward in time
+    const connectionTime = Math.min(fromAssignment.endTime, toAssignment.startTime);
+    const fromX = this.timeToX(connectionTime);
     const toX = this.timeToX(toAssignment.startTime);
     const fromY = this.laneToY(fromAssignment.lane) + this.options.constraints.minPeriodHeight / 2;
     const toY = this.laneToY(toAssignment.lane) + this.options.constraints.minPeriodHeight / 2;

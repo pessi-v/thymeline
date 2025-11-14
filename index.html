@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -12,14 +12,23 @@
       }
 
       body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
         background: #f5f5f5;
         padding: 20px;
       }
 
       .container {
-        max-width: 1200px;
+        max-width: 98%;
         margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      @media (min-width: 1400px) {
+        .container {
+          max-width: 1600px;
+        }
       }
 
       h1 {
@@ -39,6 +48,8 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         padding: 20px;
         min-height: 500px;
+        width: 100%;
+        box-sizing: border-box;
       }
 
       .controls {
@@ -74,15 +85,32 @@
   <body>
     <div class="container">
       <h1>Thymeline Demo</h1>
-      <p>Interactive timeline renderer spanning from geological to modern time scales</p>
+      <p>
+        Interactive timeline renderer spanning from geological to modern time
+        scales
+      </p>
 
       <div class="controls">
-        <label for="timeline-selector" style="margin-right: 10px;">
+        <label for="timeline-selector" style="margin-right: 10px">
           <strong>Timeline:</strong>
-          <select id="timeline-selector" style="margin-left: 5px; padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
-            <option value="examples/timeline-data.json">Full History (Geological to Modern)</option>
-            <option value="examples/modern-future.json">Modern & Future (2000-2050)</option>
-            <option value="examples/simple-timeline.json">Simple Example</option>
+          <select
+            id="timeline-selector"
+            style="
+              margin-left: 5px;
+              padding: 6px;
+              border-radius: 4px;
+              border: 1px solid #ccc;
+            "
+          >
+            <option value="examples/timeline-data.json">
+              Full History (Geological to Modern)
+            </option>
+            <option value="examples/modern-future.json">
+              Modern & Future (2000-2050)
+            </option>
+            <option value="examples/simple-timeline.json">
+              Simple Example
+            </option>
           </select>
         </label>
         <button id="pan-left">← Pan Left</button>
@@ -96,43 +124,72 @@
 
       <div class="info">
         <strong>Status:</strong> <span id="status">Initializing...</span>
-        <br>
-        <strong>Debug:</strong> <span id="debug-info" style="font-family: monospace; font-size: 12px;">-</span>
+        <br />
+        <strong>Debug:</strong>
+        <span id="debug-info" style="font-family: monospace; font-size: 12px"
+          >-</span
+        >
       </div>
     </div>
 
     <script type="module">
-      import { TimelineRenderer } from './src/index.ts';
+      import { TimelineRenderer, validateTimelineData, formatValidationResult } from "./src/index.ts";
 
       // Function to load a timeline
       function loadTimeline(url) {
-        document.getElementById('status').textContent = 'Loading timeline...';
+        document.getElementById("status").textContent = "Loading timeline...";
 
         fetch(url)
-          .then(res => res.json())
-          .then(timelineData => {
+          .then((res) => res.json())
+          .then((timelineData) => {
+            // Validate timeline data
+            const validation = validateTimelineData(timelineData);
+
+            if (!validation.valid) {
+              const errorMsg = formatValidationResult(validation);
+              console.error('Timeline validation failed:\n', errorMsg);
+              document.getElementById("status").textContent =
+                `Validation failed: ${validation.errors.length} error(s) found. See console for details.`;
+              document.getElementById("debug-info").textContent =
+                validation.errors[0]?.message || 'Unknown error';
+              alert('Timeline validation failed:\n\n' + errorMsg);
+              return;
+            }
+
+            // Show warnings if any
+            if (validation.warnings.length > 0) {
+              console.warn('Timeline validation warnings:\n', formatValidationResult(validation));
+            }
+
             // Destroy existing renderer if it exists
             if (window.renderer) {
               window.renderer.destroy();
             }
 
+            // Get container dimensions
+            const container = document.getElementById("timeline-container");
+            const containerWidth = container.clientWidth - 40; // Subtract padding
+
             // Initialize renderer with config from data, or use defaults
             const config = timelineData.config || {};
-            const renderer = new TimelineRenderer('#timeline-container', {
-              width: config.width || 1160,
+            const renderer = new TimelineRenderer("#timeline-container", {
+              width: config.width || containerWidth,
               height: config.height || 500,
-              initialStartTime: config.initialStartTime || { year: 100, era: 'BCE' },
+              initialStartTime: config.initialStartTime || {
+                year: 100,
+                era: "BCE",
+              },
               initialEndTime: config.initialEndTime || new Date().toISOString(),
-              theme: config.theme || 'light',
+              theme: config.theme || "light",
               constraints: config.constraints,
             });
 
             // Set up event listeners for this renderer
-            renderer.on('zoom', (level) => {
+            renderer.on("zoom", (level) => {
               updateStatus();
             });
 
-            renderer.on('pan', (centerTime) => {
+            renderer.on("pan", (centerTime) => {
               updateStatus();
             });
 
@@ -142,47 +199,63 @@
             // Make renderer available for controls
             window.renderer = renderer;
 
-            document.getElementById('status').textContent =
+            document.getElementById("status").textContent =
               `Timeline loaded: ${timelineData.events.length} events, ${timelineData.periods.length} periods`;
 
             updateStatus();
           })
-          .catch(err => {
-            document.getElementById('status').textContent = 'Error loading timeline data: ' + err.message;
-            console.error('Error loading timeline:', err);
+          .catch((err) => {
+            document.getElementById("status").textContent =
+              "Error loading timeline data: " + err.message;
+            console.error("Error loading timeline:", err);
           });
       }
 
       // Load initial timeline
-      loadTimeline('./examples/timeline-data.json');
+      loadTimeline("./examples/timeline-data.json");
 
-      // Set up timeline selector
-      document.getElementById('timeline-selector').addEventListener('change', (e) => {
-        loadTimeline(e.target.value);
+      // Handle window resize
+      let resizeTimeout;
+      window.addEventListener("resize", () => {
+        // Debounce resize events
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          if (window.renderer) {
+            const selector = document.getElementById("timeline-selector");
+            loadTimeline(selector.value);
+          }
+        }, 250);
       });
 
+      // Set up timeline selector
+      document
+        .getElementById("timeline-selector")
+        .addEventListener("change", (e) => {
+          loadTimeline(e.target.value);
+        });
+
       // Set up controls
-      document.getElementById('zoom-in').addEventListener('click', () => {
+      document.getElementById("zoom-in").addEventListener("click", () => {
         window.renderer?.zoomIn();
       });
 
-      document.getElementById('zoom-out').addEventListener('click', () => {
+      document.getElementById("zoom-out").addEventListener("click", () => {
         window.renderer?.zoomOut();
       });
 
-      document.getElementById('pan-left').addEventListener('click', () => {
+      document.getElementById("pan-left").addEventListener("click", () => {
         window.renderer?.panBy(-200); // Pan left (negative pixels)
       });
 
-      document.getElementById('pan-right').addEventListener('click', () => {
+      document.getElementById("pan-right").addEventListener("click", () => {
         window.renderer?.panBy(200); // Pan right (positive pixels)
       });
 
-      document.getElementById('reset').addEventListener('click', () => {
+      document.getElementById("reset").addEventListener("click", () => {
         if (window.renderer) {
           const vp = window.renderer.getViewport();
           // Reset to initial viewport based on loaded data
-          const selector = document.getElementById('timeline-selector');
+          const selector = document.getElementById("timeline-selector");
           loadTimeline(selector.value);
         }
       });
@@ -194,14 +267,14 @@
           const range = (vp.endTime - vp.startTime).toExponential(2);
 
           // Update main status
-          const statusText = document.getElementById('status').textContent;
-          if (!statusText.includes('Timeline loaded:')) {
-            document.getElementById('status').textContent =
+          const statusText = document.getElementById("status").textContent;
+          if (!statusText.includes("Timeline loaded:")) {
+            document.getElementById("status").textContent =
               `Viewing range: ${range} years | Center: ${vp.centerTime.toFixed(0)}`;
           }
 
           // Update debug info
-          document.getElementById('debug-info').textContent =
+          document.getElementById("debug-info").textContent =
             `Zoom Level: ${vp.zoomLevel.toFixed(4)}x | ` +
             `Start: ${vp.startTime.toFixed(2)} | ` +
             `End: ${vp.endTime.toFixed(2)}`;
