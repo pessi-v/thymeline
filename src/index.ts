@@ -25,7 +25,7 @@ export type {
 
 export { normalizeTime, formatTime, determineTimeScale } from './utils/timeNormalization';
 export { assignLanes, getLaneCount } from './layout/laneAssignment';
-export { validateTimelineData, formatValidationResult } from './utils/validation';
+export { validateTimelineData, formatValidationResult, BIG_BANG_TIME } from './utils/validation';
 export type { ValidationResult, ValidationError } from './utils/validation';
 
 // Default export

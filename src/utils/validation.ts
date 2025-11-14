@@ -18,6 +18,11 @@ export interface ValidationResult {
 }
 
 /**
+ * Big Bang time limit (13.8 billion years ago)
+ */
+export const BIG_BANG_TIME = -13_800_000_000;
+
+/**
  * Validate timeline data for logical consistency
  */
 export function validateTimelineData(data: TimelineData): ValidationResult {
@@ -48,6 +53,22 @@ export function validateTimelineData(data: TimelineData): ValidationResult {
         errors.push({
           type: 'error',
           message: `Period "${period.name}" has start time after end time`,
+          itemId: period.id,
+        });
+      }
+
+      // Check Big Bang limit
+      if (startTime < BIG_BANG_TIME) {
+        errors.push({
+          type: 'error',
+          message: `Period "${period.name}" starts before the Big Bang (13.8 billion years ago). Start time: ${startTime.toExponential(2)}`,
+          itemId: period.id,
+        });
+      }
+      if (endTime < BIG_BANG_TIME) {
+        errors.push({
+          type: 'error',
+          message: `Period "${period.name}" ends before the Big Bang (13.8 billion years ago). End time: ${endTime.toExponential(2)}`,
           itemId: period.id,
         });
       }
@@ -106,7 +127,16 @@ export function validateTimelineData(data: TimelineData): ValidationResult {
   // Validate events
   for (const event of data.events) {
     try {
-      normalizeTime(event.time);
+      const time = normalizeTime(event.time);
+
+      // Check Big Bang limit
+      if (time < BIG_BANG_TIME) {
+        errors.push({
+          type: 'error',
+          message: `Event "${event.name}" is set before the Big Bang (13.8 billion years ago). Time: ${time.toExponential(2)}`,
+          itemId: event.id,
+        });
+      }
     } catch (err) {
       errors.push({
         type: 'error',
