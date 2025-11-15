@@ -90,6 +90,7 @@ export interface RendererOptions {
   maxZoom?: number;
   theme?: 'light' | 'dark' | 'custom';
   constraints?: RenderConstraints;
+  periodLayoutAlgorithm?: string; // Default: 'greedy'
 }
 
 /**

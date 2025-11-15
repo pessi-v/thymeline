@@ -14,7 +14,6 @@ import type {
   ItemClickCallback,
   ItemHoverCallback,
   ViewportState,
-  RenderConstraints,
 } from "../core/types";
 import { normalizeTime } from "../utils/timeNormalization";
 import { assignLanes } from "../layout/laneAssignment";
@@ -58,6 +57,7 @@ export class TimelineRenderer {
         laneHeight: 80,
         laneGap: 10,
       },
+      periodLayoutAlgorithm: options.periodLayoutAlgorithm ?? "greedy",
     };
 
     // Initialize viewport
@@ -86,8 +86,12 @@ export class TimelineRenderer {
     this.viewport.centerTime = (minTime + maxTime) / 2;
     this.viewport.zoomLevel = 1;
 
-    // Assign lanes
-    const assignments = assignLanes(timelineData.periods, timelineData.events);
+    // Assign lanes using the selected period layout algorithm
+    const assignments = assignLanes(
+      timelineData.periods,
+      timelineData.events,
+      this.options.periodLayoutAlgorithm
+    );
 
     // Store assignments for rendering
     this.laneAssignments = assignments;
