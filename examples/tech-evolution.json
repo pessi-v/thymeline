@@ -1,0 +1,128 @@
+{
+  "events": [
+    { "id": "e1", "name": "First Computer", "time": "1945-01-01" },
+    { "id": "e2", "name": "Transistor Invented", "time": "1947-12-23" },
+    { "id": "e3", "name": "Internet Born", "time": "1969-10-29" },
+    { "id": "e4", "name": "First Smartphone", "time": "1992-01-01" },
+    { "id": "e5", "name": "Deep Learning Breakthrough", "time": "2012-01-01" }
+  ],
+  "periods": [
+    {
+      "id": "p1",
+      "name": "Mechanical Computing",
+      "startTime": "1800-01-01",
+      "endTime": "1950-01-01"
+    },
+    {
+      "id": "p2",
+      "name": "Electrical Engineering",
+      "startTime": "1820-01-01",
+      "endTime": "1950-01-01"
+    },
+    {
+      "id": "p3",
+      "name": "Vacuum Tube Era",
+      "startTime": "1904-01-01",
+      "endTime": "1960-01-01"
+    },
+    {
+      "id": "p4",
+      "name": "Digital Computing",
+      "startTime": "1945-01-01",
+      "endTime": "1980-01-01"
+    },
+    {
+      "id": "p5",
+      "name": "Transistor Technology",
+      "startTime": "1947-01-01",
+      "endTime": "1990-01-01"
+    },
+    {
+      "id": "p6",
+      "name": "Mainframe Era",
+      "startTime": "1952-01-01",
+      "endTime": "1975-01-01"
+    },
+    {
+      "id": "p7",
+      "name": "Minicomputer Era",
+      "startTime": "1960-01-01",
+      "endTime": "1985-01-01"
+    },
+    {
+      "id": "p8",
+      "name": "Integrated Circuits",
+      "startTime": "1958-01-01",
+      "endTime": "2024-01-01"
+    },
+    {
+      "id": "p9",
+      "name": "Personal Computing",
+      "startTime": "1975-01-01",
+      "endTime": "2010-01-01"
+    },
+    {
+      "id": "p10",
+      "name": "Internet Age",
+      "startTime": "1969-01-01",
+      "endTime": "2024-01-01"
+    },
+    {
+      "id": "p11",
+      "name": "Mobile Computing",
+      "startTime": "1992-01-01",
+      "endTime": "2024-01-01"
+    },
+    {
+      "id": "p12",
+      "name": "Cloud Computing",
+      "startTime": "2006-01-01",
+      "endTime": "2024-01-01"
+    },
+    {
+      "id": "p13",
+      "name": "AI/ML Revolution",
+      "startTime": "2012-01-01",
+      "endTime": "2024-01-01"
+    },
+    {
+      "id": "p14",
+      "name": "Quantum Computing",
+      "startTime": "2019-01-01",
+      "endTime": "2024-01-01"
+    },
+    {
+      "id": "p15",
+      "name": "Standalone Tech A",
+      "startTime": "1880-01-01",
+      "endTime": "1920-01-01"
+    },
+    {
+      "id": "p16",
+      "name": "Standalone Tech B",
+      "startTime": "1990-01-01",
+      "endTime": "2005-01-01"
+    }
+  ],
+  "connectors": [
+    { "id": "c1", "fromId": "p1", "toId": "p4", "type": "defined" },
+    { "id": "c2", "fromId": "p2", "toId": "p3", "type": "defined" },
+    { "id": "c3", "fromId": "p3", "toId": "p4", "type": "defined" },
+    { "id": "c4", "fromId": "p4", "toId": "p6", "type": "defined" },
+    { "id": "c5", "fromId": "p5", "toId": "p6", "type": "defined" },
+    { "id": "c6", "fromId": "p5", "toId": "p7", "type": "defined" },
+    { "id": "c7", "fromId": "p5", "toId": "p8", "type": "defined" },
+    { "id": "c8", "fromId": "p6", "toId": "p9", "type": "defined" },
+    { "id": "c9", "fromId": "p7", "toId": "p9", "type": "defined" },
+    { "id": "c10", "fromId": "p8", "toId": "p9", "type": "defined" },
+    { "id": "c11", "fromId": "p4", "toId": "p10", "type": "defined" },
+    { "id": "c12", "fromId": "p9", "toId": "p11", "type": "defined" },
+    { "id": "c13", "fromId": "p10", "toId": "p11", "type": "defined" },
+    { "id": "c14", "fromId": "p10", "toId": "p12", "type": "defined" },
+    { "id": "c15", "fromId": "p11", "toId": "p12", "type": "defined" },
+    { "id": "c16", "fromId": "p12", "toId": "p13", "type": "defined" },
+    { "id": "c17", "fromId": "p8", "toId": "p13", "type": "defined" },
+    { "id": "c18", "fromId": "p8", "toId": "p14", "type": "defined" },
+    { "id": "c19", "fromId": "p13", "toId": "p14", "type": "undefined" }
+  ]
+}

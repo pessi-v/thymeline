@@ -102,15 +102,7 @@
               border: 1px solid #ccc;
             "
           >
-            <option value="examples/timeline-data.json">
-              Full History (Geological to Modern)
-            </option>
-            <option value="examples/modern-future.json">
-              Modern & Future (2000-2050)
-            </option>
-            <option value="examples/simple-timeline.json">
-              Simple Example
-            </option>
+            <!-- Options populated automatically by Vite's import.meta.glob -->
           </select>
         </label>
         <button id="pan-left">← Pan Left</button>
@@ -134,6 +126,43 @@
 
     <script type="module">
       import { TimelineRenderer, validateTimelineData, formatValidationResult } from "./src/index.ts";
+
+      // Use Vite's glob import to automatically discover all example JSON files
+      const exampleModules = import.meta.glob('./examples/*.json');
+
+      // Extract filenames and create friendly names
+      const examples = Object.keys(exampleModules).map(path => {
+        const filename = path.replace('./examples/', '');
+        const name = filename
+          .replace('.json', '')
+          .split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+
+        return {
+          path,
+          filename,
+          name
+        };
+      }).sort((a, b) => {
+        // Sort with 'timeline-data' first, then alphabetically
+        if (a.filename === 'timeline-data.json') return -1;
+        if (b.filename === 'timeline-data.json') return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      // Populate the selector with discovered examples
+      function populateSelector() {
+        const selector = document.getElementById('timeline-selector');
+        selector.innerHTML = '';
+
+        examples.forEach((example, index) => {
+          const option = document.createElement('option');
+          option.value = example.path;
+          option.textContent = example.name;
+          selector.appendChild(option);
+        });
+      }
 
       // Function to load a timeline
       function loadTimeline(url) {
@@ -211,8 +240,11 @@
           });
       }
 
-      // Load initial timeline
-      loadTimeline("./examples/timeline-data.json");
+      // Populate selector and load initial timeline
+      populateSelector();
+      if (examples.length > 0) {
+        loadTimeline(examples[0].path);
+      }
 
       // Handle window resize
       let resizeTimeout;
