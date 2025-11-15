@@ -714,7 +714,7 @@ export class TimelineRenderer {
       bigBangLine.setAttribute("x2", bigBangX.toString());
       bigBangLine.setAttribute("y2", svgHeight.toString());
       bigBangLine.setAttribute("stroke", "#333");
-      bigBangLine.setAttribute("stroke-width", "3");
+      bigBangLine.setAttribute("stroke-width", "2");
       bigBangLine.setAttribute("stroke-dasharray", "5,5");
       this.svg.appendChild(bigBangLine);
 
