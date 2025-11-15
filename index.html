@@ -50,6 +50,17 @@
         min-height: 500px;
         width: 100%;
         box-sizing: border-box;
+        /* Prevent text selection during drag/pan */
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+      }
+
+      #timeline-container svg {
+        /* Additional CSS for SVG elements */
+        user-select: none;
+        -webkit-user-select: none;
       }
 
       .controls {
