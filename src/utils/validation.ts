@@ -2,7 +2,7 @@
  * Validation utilities for timeline data
  */
 
-import type { TimelineData, TimelinePeriod, TimelineConnector } from '../core/types';
+import type { TimelineData } from '../core/types';
 import { normalizeTime } from './timeNormalization';
 
 export interface ValidationError {

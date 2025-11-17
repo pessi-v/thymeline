@@ -27,6 +27,8 @@ export { normalizeTime, formatTime, determineTimeScale } from './utils/timeNorma
 export { assignLanes, getLaneCount } from './layout/laneAssignment';
 export { validateTimelineData, formatValidationResult, BIG_BANG_TIME } from './utils/validation';
 export type { ValidationResult, ValidationError } from './utils/validation';
+export { PERIOD_LAYOUT_ALGORITHMS, DEFAULT_PERIOD_LAYOUT } from './layout/algorithms';
+export type { PeriodLayoutAlgorithm } from './layout/algorithms';
 
 // Default export
 export { TimelineRenderer as default } from './renderer/TimelineRenderer';

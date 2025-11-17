@@ -50,6 +50,17 @@
         min-height: 500px;
         width: 100%;
         box-sizing: border-box;
+        /* Prevent text selection during drag/pan */
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+      }
+
+      #timeline-container svg {
+        /* Additional CSS for SVG elements */
+        user-select: none;
+        -webkit-user-select: none;
       }
 
       .controls {
@@ -105,6 +116,24 @@
             <!-- Options populated automatically by Vite's import.meta.glob -->
           </select>
         </label>
+        <label for="layout-selector" style="margin-right: 10px">
+          <strong>Period Layout:</strong>
+          <select
+            id="layout-selector"
+            style="
+              margin-left: 5px;
+              padding: 6px;
+              border-radius: 4px;
+              border: 1px solid #ccc;
+            "
+          >
+            <!-- Options populated from PERIOD_LAYOUT_ALGORITHMS -->
+          </select>
+        </label>
+        <label for="row-numbers-toggle" style="margin-right: 10px">
+          <input type="checkbox" id="row-numbers-toggle" style="margin-left: 5px" />
+          <strong>Show Row Numbers</strong>
+        </label>
         <button id="pan-left">← Pan Left</button>
         <button id="zoom-out">Zoom Out</button>
         <button id="reset">Reset View</button>
@@ -125,7 +154,7 @@
     </div>
 
     <script type="module">
-      import { TimelineRenderer, validateTimelineData, formatValidationResult } from "./src/index.ts";
+      import { TimelineRenderer, validateTimelineData, formatValidationResult, PERIOD_LAYOUT_ALGORITHMS } from "./src/index.ts";
 
       // Use Vite's glob import to automatically discover all example JSON files
       const exampleModules = import.meta.glob('./examples/*.json');
@@ -151,8 +180,8 @@
         return a.name.localeCompare(b.name);
       });
 
-      // Populate the selector with discovered examples
-      function populateSelector() {
+      // Populate the timeline selector with discovered examples
+      function populateTimelineSelector() {
         const selector = document.getElementById('timeline-selector');
         selector.innerHTML = '';
 
@@ -164,9 +193,33 @@
         });
       }
 
+      // Populate the layout algorithm selector
+      function populateLayoutSelector() {
+        const selector = document.getElementById('layout-selector');
+        selector.innerHTML = '';
+
+        Object.entries(PERIOD_LAYOUT_ALGORITHMS).forEach(([key, algorithm]) => {
+          const option = document.createElement('option');
+          option.value = key;
+          option.textContent = algorithm.name;
+          option.title = algorithm.description;
+          selector.appendChild(option);
+        });
+      }
+
       // Function to load a timeline
-      function loadTimeline(url) {
+      function loadTimeline(url, layoutAlgorithm = null) {
         document.getElementById("status").textContent = "Loading timeline...";
+
+        // Get current layout algorithm if not specified
+        if (layoutAlgorithm === null) {
+          const layoutSelector = document.getElementById("layout-selector");
+          layoutAlgorithm = layoutSelector.value || 'greedy';
+        }
+
+        // Get current row numbers toggle state
+        const rowNumbersToggle = document.getElementById("row-numbers-toggle");
+        const showRowNumbers = rowNumbersToggle.checked;
 
         fetch(url)
           .then((res) => res.json())
@@ -211,6 +264,8 @@
               initialEndTime: config.initialEndTime || new Date().toISOString(),
               theme: config.theme || "light",
               constraints: config.constraints,
+              periodLayoutAlgorithm: layoutAlgorithm,
+              showRowNumbers: showRowNumbers,
             });
 
             // Set up event listeners for this renderer
@@ -240,8 +295,9 @@
           });
       }
 
-      // Populate selector and load initial timeline
-      populateSelector();
+      // Populate selectors and load initial timeline
+      populateTimelineSelector();
+      populateLayoutSelector();
       if (examples.length > 0) {
         loadTimeline(examples[0].path);
       }
@@ -264,6 +320,14 @@
         .getElementById("timeline-selector")
         .addEventListener("change", (e) => {
           loadTimeline(e.target.value);
+        });
+
+      // Set up layout algorithm selector
+      document
+        .getElementById("layout-selector")
+        .addEventListener("change", (e) => {
+          const timelineSelector = document.getElementById("timeline-selector");
+          loadTimeline(timelineSelector.value, e.target.value);
         });
 
       // Set up controls
@@ -289,6 +353,13 @@
           // Reset to initial viewport based on loaded data
           const selector = document.getElementById("timeline-selector");
           loadTimeline(selector.value);
+        }
+      });
+
+      // Set up row numbers toggle
+      document.getElementById("row-numbers-toggle").addEventListener("change", (e) => {
+        if (window.renderer) {
+          window.renderer.setShowRowNumbers(e.target.checked);
         }
       });
 
