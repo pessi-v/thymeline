@@ -1,0 +1,77 @@
+{
+  "events": [],
+  "periods": [
+    {
+      "id": "root",
+      "name": "Root Period",
+      "startTime": "2000-01-01",
+      "endTime": "2005-12-31"
+    },
+    {
+      "id": "child1",
+      "name": "Child 1",
+      "startTime": "2006-01-01",
+      "endTime": "2010-12-31"
+    },
+    {
+      "id": "child2",
+      "name": "Child 2",
+      "startTime": "2003-01-01",
+      "endTime": "2007-12-31"
+    },
+    {
+      "id": "child3",
+      "name": "Child 3",
+      "startTime": "2007-01-01",
+      "endTime": "2012-12-31"
+    },
+    {
+      "id": "grandchild1",
+      "name": "Grandchild 1",
+      "startTime": "2014-01-01",
+      "endTime": "2018-12-31"
+    },
+    {
+      "id": "grandchild2",
+      "name": "Grandchild 2",
+      "startTime": "2009-01-01",
+      "endTime": "2014-12-31"
+    }
+  ],
+  "connectors": [
+    {
+      "id": "c1",
+      "fromId": "root",
+      "toId": "child1",
+      "type": "defined"
+    },
+    {
+      "id": "c2",
+      "fromId": "root",
+      "toId": "child2",
+      "type": "defined"
+    },
+    {
+      "id": "c3",
+      "fromId": "root",
+      "toId": "child3",
+      "type": "defined"
+    },
+    {
+      "id": "c4",
+      "fromId": "child3",
+      "toId": "grandchild1",
+      "type": "defined"
+    },
+    {
+      "id": "c5",
+      "fromId": "child2",
+      "toId": "grandchild2",
+      "type": "undefined"
+    }
+  ],
+  "config": {
+    "initialStartTime": "1999-01-01",
+    "initialEndTime": "2016-12-31"
+  }
+}

@@ -3,13 +3,13 @@
  * Assigns periods to lanes without overlap using a greedy approach
  */
 
-import type { TimelinePeriod, LaneAssignment, NormalizedTime } from '../../core/types';
+import type { TimelinePeriod, TimelineConnector, LaneAssignment, NormalizedTime } from '../../core/types';
 import { normalizeTime } from '../../utils/timeNormalization';
 
 export interface PeriodLayoutAlgorithm {
   name: string;
   description: string;
-  layout(periods: TimelinePeriod[]): LaneAssignment[];
+  layout(periods: TimelinePeriod[], connectors?: TimelineConnector[]): LaneAssignment[];
 }
 
 /**
@@ -32,7 +32,7 @@ export const greedyPeriodLayout: PeriodLayoutAlgorithm = {
   name: 'Greedy',
   description: 'Simple greedy algorithm - assigns periods to first available lane',
 
-  layout(periods: TimelinePeriod[]): LaneAssignment[] {
+  layout(periods: TimelinePeriod[], _connectors?: TimelineConnector[]): LaneAssignment[] {
     const assignments: LaneAssignment[] = [];
 
     // Normalize and sort periods by start time

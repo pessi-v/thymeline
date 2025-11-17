@@ -91,6 +91,7 @@ export interface RendererOptions {
   theme?: 'light' | 'dark' | 'custom';
   constraints?: RenderConstraints;
   periodLayoutAlgorithm?: string; // Default: 'greedy'
+  showRowNumbers?: boolean; // Default: false
 }
 
 /**

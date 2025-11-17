@@ -130,6 +130,10 @@
             <!-- Options populated from PERIOD_LAYOUT_ALGORITHMS -->
           </select>
         </label>
+        <label for="row-numbers-toggle" style="margin-right: 10px">
+          <input type="checkbox" id="row-numbers-toggle" style="margin-left: 5px" />
+          <strong>Show Row Numbers</strong>
+        </label>
         <button id="pan-left">← Pan Left</button>
         <button id="zoom-out">Zoom Out</button>
         <button id="reset">Reset View</button>
@@ -213,6 +217,10 @@
           layoutAlgorithm = layoutSelector.value || 'greedy';
         }
 
+        // Get current row numbers toggle state
+        const rowNumbersToggle = document.getElementById("row-numbers-toggle");
+        const showRowNumbers = rowNumbersToggle.checked;
+
         fetch(url)
           .then((res) => res.json())
           .then((timelineData) => {
@@ -257,6 +265,7 @@
               theme: config.theme || "light",
               constraints: config.constraints,
               periodLayoutAlgorithm: layoutAlgorithm,
+              showRowNumbers: showRowNumbers,
             });
 
             // Set up event listeners for this renderer
@@ -344,6 +353,13 @@
           // Reset to initial viewport based on loaded data
           const selector = document.getElementById("timeline-selector");
           loadTimeline(selector.value);
+        }
+      });
+
+      // Set up row numbers toggle
+      document.getElementById("row-numbers-toggle").addEventListener("change", (e) => {
+        if (window.renderer) {
+          window.renderer.setShowRowNumbers(e.target.checked);
         }
       });
 

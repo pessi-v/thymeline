@@ -3,7 +3,7 @@
  * Coordinates period and event layout using pluggable algorithms
  */
 
-import type { TimelinePeriod, TimelineEvent, LaneAssignment } from '../core/types';
+import type { TimelinePeriod, TimelineEvent, TimelineConnector, LaneAssignment } from '../core/types';
 import { PERIOD_LAYOUT_ALGORITHMS, DEFAULT_PERIOD_LAYOUT, assignEventLanes } from './algorithms';
 
 /**
@@ -13,7 +13,8 @@ import { PERIOD_LAYOUT_ALGORITHMS, DEFAULT_PERIOD_LAYOUT, assignEventLanes } fro
 export function assignLanes(
   periods: TimelinePeriod[],
   events: TimelineEvent[],
-  periodLayoutAlgorithm: string = DEFAULT_PERIOD_LAYOUT
+  periodLayoutAlgorithm: string = DEFAULT_PERIOD_LAYOUT,
+  connectors: TimelineConnector[] = []
 ): LaneAssignment[] {
   // Get the period layout algorithm
   const algorithm = PERIOD_LAYOUT_ALGORITHMS[periodLayoutAlgorithm];
@@ -21,8 +22,8 @@ export function assignLanes(
     throw new Error(`Unknown period layout algorithm: ${periodLayoutAlgorithm}`);
   }
 
-  // Assign periods using the selected algorithm
-  const periodAssignments = algorithm.layout(periods);
+  // Assign periods using the selected algorithm (pass connectors for tree-based layouts)
+  const periodAssignments = algorithm.layout(periods, connectors);
 
   // Calculate the lane offset for events (after all period lanes)
   const maxPeriodLane = periodAssignments.length > 0

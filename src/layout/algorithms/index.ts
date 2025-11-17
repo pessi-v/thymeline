@@ -4,10 +4,12 @@
 
 import type { PeriodLayoutAlgorithm } from './greedyPeriodLayout';
 import { greedyPeriodLayout } from './greedyPeriodLayout';
+import { treePeriodLayout } from './treePeriodLayout';
 
 // Registry of all available period layout algorithms
 export const PERIOD_LAYOUT_ALGORITHMS: Record<string, PeriodLayoutAlgorithm> = {
   greedy: greedyPeriodLayout,
+  tree: treePeriodLayout,
 };
 
 // Default algorithm

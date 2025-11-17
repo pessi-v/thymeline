@@ -1,0 +1,119 @@
+{
+  "events": [],
+  "periods": [
+    {
+      "id": "tree1-root",
+      "name": "Dynasty A",
+      "startTime": "1800-01-01",
+      "endTime": "1850-12-31"
+    },
+    {
+      "id": "tree1-child1",
+      "name": "Ruler A1",
+      "startTime": "1851-01-01",
+      "endTime": "1875-12-31"
+    },
+    {
+      "id": "tree1-child2",
+      "name": "Ruler A2",
+      "startTime": "1820-01-01",
+      "endTime": "1845-12-31"
+    },
+    {
+      "id": "tree1-grandchild",
+      "name": "Ruler A1.1",
+      "startTime": "1876-01-01",
+      "endTime": "1900-12-31"
+    },
+    {
+      "id": "tree2-root",
+      "name": "Dynasty B",
+      "startTime": "1900-01-01",
+      "endTime": "1950-12-31"
+    },
+    {
+      "id": "tree2-child1",
+      "name": "Ruler B1",
+      "startTime": "1951-01-01",
+      "endTime": "1980-12-31"
+    },
+    {
+      "id": "tree2-child2",
+      "name": "Ruler B2",
+      "startTime": "1920-01-01",
+      "endTime": "1945-12-31"
+    },
+    {
+      "id": "tree2-child3",
+      "name": "Ruler B3",
+      "startTime": "1955-01-01",
+      "endTime": "1985-12-31"
+    },
+    {
+      "id": "tree2-grandchild1",
+      "name": "Ruler B1.1",
+      "startTime": "1981-01-01",
+      "endTime": "2010-12-31"
+    },
+    {
+      "id": "tree2-grandchild2",
+      "name": "Ruler B2.1",
+      "startTime": "1946-01-01",
+      "endTime": "1970-12-31"
+    }
+  ],
+  "connectors": [
+    {
+      "id": "t1c1",
+      "fromId": "tree1-root",
+      "toId": "tree1-child1",
+      "type": "defined"
+    },
+    {
+      "id": "t1c2",
+      "fromId": "tree1-root",
+      "toId": "tree1-child2",
+      "type": "defined"
+    },
+    {
+      "id": "t1c3",
+      "fromId": "tree1-child1",
+      "toId": "tree1-grandchild",
+      "type": "defined"
+    },
+    {
+      "id": "t2c1",
+      "fromId": "tree2-root",
+      "toId": "tree2-child1",
+      "type": "defined"
+    },
+    {
+      "id": "t2c2",
+      "fromId": "tree2-root",
+      "toId": "tree2-child2",
+      "type": "defined"
+    },
+    {
+      "id": "t2c3",
+      "fromId": "tree2-root",
+      "toId": "tree2-child3",
+      "type": "undefined"
+    },
+    {
+      "id": "t2c4",
+      "fromId": "tree2-child1",
+      "toId": "tree2-grandchild1",
+      "type": "defined"
+    },
+    {
+      "id": "t2c5",
+      "fromId": "tree2-child2",
+      "toId": "tree2-grandchild2",
+      "type": "defined"
+    }
+  ],
+  "config": {
+    "initialStartTime": "1790-01-01",
+    "initialEndTime": "2020-12-31"
+  }
+}

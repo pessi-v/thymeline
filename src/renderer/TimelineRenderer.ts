@@ -27,6 +27,7 @@ export class TimelineRenderer {
   private viewport: ViewportState;
   private eventListeners: Map<string, Set<Function>> = new Map();
   private laneAssignments: import("../core/types").LaneAssignment[] = [];
+  private rowMapping: Map<string, number> = new Map();
 
   constructor(selector: string | HTMLElement, options: RendererOptions = {}) {
     // Get container element
@@ -58,6 +59,7 @@ export class TimelineRenderer {
         laneGap: 10,
       },
       periodLayoutAlgorithm: options.periodLayoutAlgorithm ?? "greedy",
+      showRowNumbers: options.showRowNumbers ?? false,
     };
 
     // Initialize viewport
@@ -90,11 +92,15 @@ export class TimelineRenderer {
     const assignments = assignLanes(
       timelineData.periods,
       timelineData.events,
-      this.options.periodLayoutAlgorithm
+      this.options.periodLayoutAlgorithm,
+      timelineData.connectors
     );
 
     // Store assignments for rendering
     this.laneAssignments = assignments;
+
+    // Build row mapping (normalize sparse lanes to dense rows)
+    this.rowMapping = this.buildRowMapping();
 
     // Create SVG element (now that we know how many lanes we need)
     this.createSVG();
@@ -257,6 +263,14 @@ export class TimelineRenderer {
   }
 
   /**
+   * Toggle row numbers visibility
+   */
+  setShowRowNumbers(show: boolean): void {
+    this.options.showRowNumbers = show;
+    this.renderTimeline();
+  }
+
+  /**
    * Export
    */
   toSVG(): string {
@@ -308,13 +322,13 @@ export class TimelineRenderer {
     this.svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     this.svg.setAttribute("width", this.options.width.toString());
 
-    // Calculate height based on number of lanes
-    const numLanes =
-      this.laneAssignments.length > 0
-        ? Math.max(...this.laneAssignments.map((a) => a.lane)) + 1
-        : 1;
-    const { laneHeight, laneGap } = this.options.constraints;
-    const calculatedHeight = 60 + numLanes * (laneHeight + laneGap) + 20;
+    // Calculate height based on actual number of rows used
+    const numRows = this.rowMapping.size > 0 ? Math.max(...this.rowMapping.values()) + 1 : 1;
+    const periodHeight = this.options.constraints.minPeriodHeight;
+    const rowGap = 10;
+    const timeAxisOffset = 60;
+    const bottomPadding = 20;
+    const calculatedHeight = timeAxisOffset + numRows * (periodHeight + rowGap) + bottomPadding;
     const height = Math.max(this.options.height, calculatedHeight);
 
     this.svg.setAttribute("height", height.toString());
@@ -495,35 +509,51 @@ export class TimelineRenderer {
   }
 
   /**
-   * Get Y position for a lane
-   * Layout pattern repeats: Period, Event, Event, Event, Period, Event, Event, Event, ...
+   * Convert lane assignments to sequential row numbers
+   * This normalizes sparse lane assignments (e.g., 0, 1, 5, 10) to dense rows (0, 1, 2, 3)
    */
-  private laneToY(lane: number, type?: "period" | "event"): number {
+  private buildRowMapping(): Map<string, number> {
+    const rowMap = new Map<string, number>();
+
+    // Separate periods and events
+    const periodAssignments = this.laneAssignments.filter(a => a.type === 'period');
+    const eventAssignments = this.laneAssignments.filter(a => a.type === 'event');
+
+    // Get unique lanes and sort them
+    const periodLanes = [...new Set(periodAssignments.map(a => a.lane))].sort((a, b) => a - b);
+    const eventLanes = [...new Set(eventAssignments.map(a => a.lane))].sort((a, b) => a - b);
+
+    // Map period lanes to sequential rows
+    periodAssignments.forEach(assignment => {
+      const row = periodLanes.indexOf(assignment.lane);
+      rowMap.set(assignment.itemId, row);
+    });
+
+    // Map event lanes to sequential rows (starting after periods)
+    const periodRowCount = periodLanes.length;
+    eventAssignments.forEach(assignment => {
+      const eventRow = eventLanes.indexOf(assignment.lane);
+      const row = periodRowCount + eventRow;
+      rowMap.set(assignment.itemId, row);
+    });
+
+    return rowMap;
+  }
+
+  /**
+   * Get Y position for a row
+   * Simple row-based positioning with fixed gaps
+   */
+  private rowToY(row: number, type?: "period" | "event"): number {
     const periodHeight = this.options.constraints.minPeriodHeight;
-    const eventHeight = 20; // Height of event row
-    const periodGap = 10; // Gap after period row
-    const eventGap = 5; // Gap between event rows
-    const blockGap = 15; // Gap after last event row before next period
-
-    const timeAxisOffset = 60; // Offset for time axis at top
-
-    // Each "block" = 1 period + 3 events
-    // Block height = period + gap + 3*event + 2*eventGap + blockGap
-    const blockHeight =
-      periodHeight + periodGap + eventHeight * 3 + eventGap * 2 + blockGap;
+    const eventHeight = 20;
+    const rowGap = 10; // Fixed gap between all rows
+    const timeAxisOffset = 60;
 
     if (type === "period") {
-      // Period lanes: each period starts a new block
-      return timeAxisOffset + lane * blockHeight;
+      return timeAxisOffset + row * (periodHeight + rowGap);
     } else {
-      // Event lanes: 3 events per block
-      const blockIndex = Math.floor(lane / 3);
-      const eventIndexInBlock = lane % 3; // 0, 1, or 2
-
-      const blockStartY = timeAxisOffset + blockIndex * blockHeight;
-      const eventsStartY = blockStartY + periodHeight + periodGap;
-
-      return eventsStartY + eventIndexInBlock * (eventHeight + eventGap);
+      return timeAxisOffset + row * (eventHeight + rowGap);
     }
   }
 
@@ -535,6 +565,11 @@ export class TimelineRenderer {
 
     // Clear existing content
     this.svg.innerHTML = "";
+
+    // Render row numbers (if enabled)
+    if (this.options.showRowNumbers) {
+      this.renderRowNumbers();
+    }
 
     // Render time axis
     this.renderTimeAxis();
@@ -552,6 +587,54 @@ export class TimelineRenderer {
     // Render connectors
     for (const connector of this.data.connectors) {
       this.renderConnector(connector);
+    }
+  }
+
+  /**
+   * Render row numbers for debugging
+   */
+  private renderRowNumbers(): void {
+    if (!this.svg) return;
+
+    const numRows = this.rowMapping.size > 0 ? Math.max(...this.rowMapping.values()) + 1 : 0;
+    const periodHeight = this.options.constraints.minPeriodHeight;
+
+    for (let row = 0; row < numRows; row++) {
+      // Determine if this row contains periods or events
+      let isEventRow = true;
+      for (const [itemId, itemRow] of this.rowMapping.entries()) {
+        if (itemRow === row) {
+          const assignment = this.laneAssignments.find(a => a.itemId === itemId);
+          if (assignment?.type === 'period') {
+            isEventRow = false;
+            break;
+          }
+        }
+      }
+
+      const y = this.rowToY(row, isEventRow ? 'event' : 'period');
+
+      // Row number background
+      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      rect.setAttribute("x", "0");
+      rect.setAttribute("y", y.toString());
+      rect.setAttribute("width", "30");
+      rect.setAttribute("height", periodHeight.toString());
+      rect.setAttribute("fill", "#f0f0f0");
+      rect.setAttribute("stroke", "#ccc");
+      rect.setAttribute("stroke-width", "0.5");
+      this.svg.appendChild(rect);
+
+      // Row number text
+      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      text.setAttribute("x", "15");
+      text.setAttribute("y", (y + periodHeight / 2 + 4).toString());
+      text.setAttribute("text-anchor", "middle");
+      text.setAttribute("font-size", "10");
+      text.setAttribute("fill", "#666");
+      text.setAttribute("font-family", "monospace");
+      text.textContent = row.toString();
+      this.svg.appendChild(text);
     }
   }
 
@@ -762,9 +845,12 @@ export class TimelineRenderer {
     const assignment = this.laneAssignments.find((a) => a.itemId === period.id);
     if (!assignment) return;
 
+    const row = this.rowMapping.get(period.id);
+    if (row === undefined) return;
+
     const startX = this.timeToX(assignment.startTime);
     const endX = this.timeToX(assignment.endTime);
-    const y = this.laneToY(assignment.lane, "period");
+    const y = this.rowToY(row, "period");
     const width = Math.max(2, endX - startX);
     const height = this.options.constraints.minPeriodHeight;
 
@@ -807,8 +893,11 @@ export class TimelineRenderer {
     const assignment = this.laneAssignments.find((a) => a.itemId === event.id);
     if (!assignment) return;
 
+    const row = this.rowMapping.get(event.id);
+    if (row === undefined) return;
+
     const x = this.timeToX(assignment.startTime);
-    const y = this.laneToY(assignment.lane, "event");
+    const y = this.rowToY(row, "event");
     const height = 20; // Event row height
 
     // Event marker (hollow circle, smaller)
@@ -849,6 +938,10 @@ export class TimelineRenderer {
 
     if (!fromAssignment || !toAssignment) return;
 
+    const fromRow = this.rowMapping.get(connector.fromId);
+    const toRow = this.rowMapping.get(connector.toId);
+    if (fromRow === undefined || toRow === undefined) return;
+
     // Calculate the connection point on the "from" period
     // If "to" starts before "from" ends (overlapping periods),
     // connect at the point where "to" begins, not at the end of "from"
@@ -860,10 +953,10 @@ export class TimelineRenderer {
     const fromX = this.timeToX(connectionTime);
     const toX = this.timeToX(toAssignment.startTime);
     const fromY =
-      this.laneToY(fromAssignment.lane, fromAssignment.type) +
+      this.rowToY(fromRow, fromAssignment.type) +
       this.options.constraints.minPeriodHeight / 2;
     const toY =
-      this.laneToY(toAssignment.lane, toAssignment.type) +
+      this.rowToY(toRow, toAssignment.type) +
       this.options.constraints.minPeriodHeight / 2;
 
     // Simple line connector
@@ -872,7 +965,7 @@ export class TimelineRenderer {
     line.setAttribute("y1", fromY.toString());
     line.setAttribute("x2", toX.toString());
     line.setAttribute("y2", toY.toString());
-    line.setAttribute("stroke", "#6c757d");
+    line.setAttribute("stroke", "#f587f3");
     line.setAttribute("stroke-width", "2");
 
     if (connector.type === "undefined") {
@@ -900,7 +993,7 @@ export class TimelineRenderer {
       "points",
       `${toX},${toY} ${arrowX1},${arrowY1} ${arrowX2},${arrowY2}`
     );
-    arrow.setAttribute("fill", "#6c757d");
+    arrow.setAttribute("fill", "#f587f3");
     arrow.setAttribute(
       "opacity",
       connector.type === "undefined" ? "0.5" : "0.7"
