@@ -49,7 +49,7 @@ export class TimelineRenderer {
       initialStartTime: options.initialStartTime ?? "1900-01-01",
       initialEndTime: options.initialEndTime ?? new Date().toISOString(),
       minZoom: options.minZoom ?? 0.1,
-      maxZoom: options.maxZoom ?? 100,
+      maxZoom: options.maxZoom ?? 1_000_000_000, // Support geological/astronomical to human timescales
       theme: options.theme ?? "light",
       constraints: options.constraints ?? {
         minEventWidth: 2,
@@ -153,10 +153,24 @@ export class TimelineRenderer {
       oldZoomLevel * (currentViewRange / fullDataRange)
     );
 
+    // Calculate the maximum zoom in level (shortest period occupies 10% of canvas)
+    const shortestPeriod = this.findShortestPeriod();
+    let dynamicMaxZoom = this.options.maxZoom;
+    if (shortestPeriod !== null) {
+      // We want shortest period to occupy 10% of canvas width
+      // timeRange = shortestPeriod / 0.1 = shortestPeriod * 10
+      const minTimeRange = shortestPeriod * 10;
+      // maxZoomLevel = fullDataRange / minTimeRange
+      dynamicMaxZoom = Math.min(
+        this.options.maxZoom,
+        fullDataRange / minTimeRange
+      );
+    }
+
     // Clamp the new zoom level
     const newZoomLevel = Math.max(
       dynamicMinZoom,
-      Math.min(this.options.maxZoom, level)
+      Math.min(dynamicMaxZoom, level)
     );
 
     // If zoom level didn't change (hit limits), don't update
@@ -325,12 +339,14 @@ export class TimelineRenderer {
     this.svg.setAttribute("width", this.options.width.toString());
 
     // Calculate height based on actual number of rows used
-    const numRows = this.rowMapping.size > 0 ? Math.max(...this.rowMapping.values()) + 1 : 1;
+    const numRows =
+      this.rowMapping.size > 0 ? Math.max(...this.rowMapping.values()) + 1 : 1;
     const periodHeight = this.options.constraints.minPeriodHeight;
     const rowGap = 10;
     const timeAxisOffset = 60;
     const bottomPadding = 20;
-    const calculatedHeight = timeAxisOffset + numRows * (periodHeight + rowGap) + bottomPadding;
+    const calculatedHeight =
+      timeAxisOffset + numRows * (periodHeight + rowGap) + bottomPadding;
     const height = Math.max(this.options.height, calculatedHeight);
 
     this.svg.setAttribute("height", height.toString());
@@ -493,6 +509,29 @@ export class TimelineRenderer {
   }
 
   /**
+   * Find the shortest period duration in the data
+   */
+  private findShortestPeriod(): number | null {
+    if (!this.data || this.data.periods.length === 0) {
+      return null;
+    }
+
+    let shortestDuration = Infinity;
+
+    for (const period of this.data.periods) {
+      const startTime = normalizeTime(period.startTime);
+      const endTime = normalizeTime(period.endTime);
+      const duration = endTime - startTime;
+
+      if (duration > 0) {
+        shortestDuration = Math.min(shortestDuration, duration);
+      }
+    }
+
+    return shortestDuration === Infinity ? null : shortestDuration;
+  }
+
+  /**
    * Recalculate viewport start/end times based on center and current range
    */
   private recalculateViewportBounds(): void {
@@ -518,22 +557,30 @@ export class TimelineRenderer {
     const rowMap = new Map<string, number>();
 
     // Separate periods and events
-    const periodAssignments = this.laneAssignments.filter(a => a.type === 'period');
-    const eventAssignments = this.laneAssignments.filter(a => a.type === 'event');
+    const periodAssignments = this.laneAssignments.filter(
+      (a) => a.type === "period"
+    );
+    const eventAssignments = this.laneAssignments.filter(
+      (a) => a.type === "event"
+    );
 
     // Get unique lanes and sort them
-    const periodLanes = [...new Set(periodAssignments.map(a => a.lane))].sort((a, b) => a - b);
-    const eventLanes = [...new Set(eventAssignments.map(a => a.lane))].sort((a, b) => a - b);
+    const periodLanes = [...new Set(periodAssignments.map((a) => a.lane))].sort(
+      (a, b) => a - b
+    );
+    const eventLanes = [...new Set(eventAssignments.map((a) => a.lane))].sort(
+      (a, b) => a - b
+    );
 
     // Map period lanes to sequential rows
-    periodAssignments.forEach(assignment => {
+    periodAssignments.forEach((assignment) => {
       const row = periodLanes.indexOf(assignment.lane);
       rowMap.set(assignment.itemId, row);
     });
 
     // Map event lanes to sequential rows (starting after periods)
     const periodRowCount = periodLanes.length;
-    eventAssignments.forEach(assignment => {
+    eventAssignments.forEach((assignment) => {
       const eventRow = eventLanes.indexOf(assignment.lane);
       const row = periodRowCount + eventRow;
       rowMap.set(assignment.itemId, row);
@@ -598,7 +645,8 @@ export class TimelineRenderer {
   private renderRowNumbers(): void {
     if (!this.svg) return;
 
-    const numRows = this.rowMapping.size > 0 ? Math.max(...this.rowMapping.values()) + 1 : 0;
+    const numRows =
+      this.rowMapping.size > 0 ? Math.max(...this.rowMapping.values()) + 1 : 0;
     const periodHeight = this.options.constraints.minPeriodHeight;
 
     for (let row = 0; row < numRows; row++) {
@@ -606,18 +654,23 @@ export class TimelineRenderer {
       let isEventRow = true;
       for (const [itemId, itemRow] of this.rowMapping.entries()) {
         if (itemRow === row) {
-          const assignment = this.laneAssignments.find(a => a.itemId === itemId);
-          if (assignment?.type === 'period') {
+          const assignment = this.laneAssignments.find(
+            (a) => a.itemId === itemId
+          );
+          if (assignment?.type === "period") {
             isEventRow = false;
             break;
           }
         }
       }
 
-      const y = this.rowToY(row, isEventRow ? 'event' : 'period');
+      const y = this.rowToY(row, isEventRow ? "event" : "period");
 
       // Row number background
-      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      const rect = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "rect"
+      );
       rect.setAttribute("x", "0");
       rect.setAttribute("y", y.toString());
       rect.setAttribute("width", "30");
@@ -628,7 +681,10 @@ export class TimelineRenderer {
       this.svg.appendChild(rect);
 
       // Row number text
-      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      const text = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "text"
+      );
       text.setAttribute("x", "15");
       text.setAttribute("y", (y + periodHeight / 2 + 4).toString());
       text.setAttribute("text-anchor", "middle");
@@ -945,7 +1001,7 @@ export class TimelineRenderer {
     if (fromRow === undefined || toRow === undefined) return;
 
     // Get the "from" period to extract its color
-    const fromPeriod = this.data.periods.find(p => p.id === connector.fromId);
+    const fromPeriod = this.data.periods.find((p) => p.id === connector.fromId);
     const periodColor = fromPeriod ? "#000" : "#f587f3"; // Default to black for periods
 
     // Calculate the connection point on the "from" period
@@ -968,7 +1024,9 @@ export class TimelineRenderer {
     // Get the connector renderer
     const renderer = CONNECTOR_RENDERERS[this.options.connectorRenderer];
     if (!renderer) {
-      console.warn(`Connector renderer not found: ${this.options.connectorRenderer}`);
+      console.warn(
+        `Connector renderer not found: ${this.options.connectorRenderer}`
+      );
       return;
     }
 
@@ -984,6 +1042,6 @@ export class TimelineRenderer {
     });
 
     // Append all elements to SVG
-    elements.forEach(element => this.svg!.appendChild(element));
+    elements.forEach((element) => this.svg!.appendChild(element));
   }
 }
