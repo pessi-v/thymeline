@@ -5,11 +5,13 @@
 import type { PeriodLayoutAlgorithm } from './greedyPeriodLayout';
 import { greedyPeriodLayout } from './greedyPeriodLayout';
 import { treePeriodLayout } from './treePeriodLayout';
+import { successionPeriodLayout } from './successionPeriodLayout';
 
 // Registry of all available period layout algorithms
 export const PERIOD_LAYOUT_ALGORITHMS: Record<string, PeriodLayoutAlgorithm> = {
   greedy: greedyPeriodLayout,
   tree: treePeriodLayout,
+  succession: successionPeriodLayout,
 };
 
 // Default algorithm

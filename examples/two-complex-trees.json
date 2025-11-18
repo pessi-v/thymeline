@@ -1,0 +1,275 @@
+{
+  "events": [],
+  "periods": [
+    {
+      "id": "tree1-root",
+      "name": "Dynasty A",
+      "startTime": "1700-01-01",
+      "endTime": "1750-12-31"
+    },
+    {
+      "id": "tree1-child1",
+      "name": "Ruler A1",
+      "startTime": "1751-01-01",
+      "endTime": "1780-12-31"
+    },
+    {
+      "id": "tree1-child2",
+      "name": "Ruler A2",
+      "startTime": "1720-01-01",
+      "endTime": "1755-12-31"
+    },
+    {
+      "id": "tree1-child3",
+      "name": "Ruler A3",
+      "startTime": "1745-01-01",
+      "endTime": "1785-12-31"
+    },
+    {
+      "id": "tree1-grandchild1",
+      "name": "Ruler A1.1",
+      "startTime": "1781-01-01",
+      "endTime": "1820-12-31"
+    },
+    {
+      "id": "tree1-grandchild2",
+      "name": "Ruler A2.1",
+      "startTime": "1756-01-01",
+      "endTime": "1790-12-31"
+    },
+    {
+      "id": "tree1-grandchild3",
+      "name": "Ruler A3.1",
+      "startTime": "1786-01-01",
+      "endTime": "1825-12-31"
+    },
+    {
+      "id": "tree1-grandchild4",
+      "name": "Ruler A3.2",
+      "startTime": "1795-01-01",
+      "endTime": "1835-12-31"
+    },
+    {
+      "id": "tree1-greatgrand1",
+      "name": "Ruler A1.1.1",
+      "startTime": "1821-01-01",
+      "endTime": "1860-12-31"
+    },
+    {
+      "id": "tree1-greatgrand2",
+      "name": "Ruler A3.1.1",
+      "startTime": "1826-01-01",
+      "endTime": "1870-12-31"
+    },
+    {
+      "id": "tree2-root",
+      "name": "Dynasty B",
+      "startTime": "1850-01-01",
+      "endTime": "1900-12-31"
+    },
+    {
+      "id": "tree2-child1",
+      "name": "Ruler B1",
+      "startTime": "1901-01-01",
+      "endTime": "1935-12-31"
+    },
+    {
+      "id": "tree2-child2",
+      "name": "Ruler B2",
+      "startTime": "1875-01-01",
+      "endTime": "1915-12-31"
+    },
+    {
+      "id": "tree2-child3",
+      "name": "Ruler B3",
+      "startTime": "1895-01-01",
+      "endTime": "1940-12-31"
+    },
+    {
+      "id": "tree2-child4",
+      "name": "Ruler B4",
+      "startTime": "1910-01-01",
+      "endTime": "1950-12-31"
+    },
+    {
+      "id": "tree2-grandchild1",
+      "name": "Ruler B1.1",
+      "startTime": "1936-01-01",
+      "endTime": "1975-12-31"
+    },
+    {
+      "id": "tree2-grandchild2",
+      "name": "Ruler B2.1",
+      "startTime": "1916-01-01",
+      "endTime": "1955-12-31"
+    },
+    {
+      "id": "tree2-grandchild3",
+      "name": "Ruler B3.1",
+      "startTime": "1941-01-01",
+      "endTime": "1985-12-31"
+    },
+    {
+      "id": "tree2-grandchild4",
+      "name": "Ruler B3.2",
+      "startTime": "1945-01-01",
+      "endTime": "1990-12-31"
+    },
+    {
+      "id": "tree2-grandchild5",
+      "name": "Ruler B4.1",
+      "startTime": "1951-01-01",
+      "endTime": "1995-12-31"
+    },
+    {
+      "id": "tree2-greatgrand1",
+      "name": "Ruler B1.1.1",
+      "startTime": "1976-01-01",
+      "endTime": "2015-12-31"
+    },
+    {
+      "id": "tree2-greatgrand2",
+      "name": "Ruler B3.1.1",
+      "startTime": "1986-01-01",
+      "endTime": "2020-12-31"
+    },
+    {
+      "id": "tree2-greatgrand3",
+      "name": "Ruler B3.2.1",
+      "startTime": "1991-01-01",
+      "endTime": "2025-12-31"
+    }
+  ],
+  "connectors": [
+    {
+      "id": "t1c1",
+      "fromId": "tree1-root",
+      "toId": "tree1-child1",
+      "type": "defined"
+    },
+    {
+      "id": "t1c2",
+      "fromId": "tree1-root",
+      "toId": "tree1-child2",
+      "type": "defined"
+    },
+    {
+      "id": "t1c3",
+      "fromId": "tree1-root",
+      "toId": "tree1-child3",
+      "type": "defined"
+    },
+    {
+      "id": "t1c4",
+      "fromId": "tree1-child1",
+      "toId": "tree1-grandchild1",
+      "type": "defined"
+    },
+    {
+      "id": "t1c5",
+      "fromId": "tree1-child2",
+      "toId": "tree1-grandchild2",
+      "type": "defined"
+    },
+    {
+      "id": "t1c6",
+      "fromId": "tree1-child3",
+      "toId": "tree1-grandchild3",
+      "type": "defined"
+    },
+    {
+      "id": "t1c7",
+      "fromId": "tree1-child3",
+      "toId": "tree1-grandchild4",
+      "type": "undefined"
+    },
+    {
+      "id": "t1c8",
+      "fromId": "tree1-grandchild1",
+      "toId": "tree1-greatgrand1",
+      "type": "defined"
+    },
+    {
+      "id": "t1c9",
+      "fromId": "tree1-grandchild3",
+      "toId": "tree1-greatgrand2",
+      "type": "defined"
+    },
+    {
+      "id": "t2c1",
+      "fromId": "tree2-root",
+      "toId": "tree2-child1",
+      "type": "defined"
+    },
+    {
+      "id": "t2c2",
+      "fromId": "tree2-root",
+      "toId": "tree2-child2",
+      "type": "defined"
+    },
+    {
+      "id": "t2c3",
+      "fromId": "tree2-root",
+      "toId": "tree2-child3",
+      "type": "defined"
+    },
+    {
+      "id": "t2c4",
+      "fromId": "tree2-root",
+      "toId": "tree2-child4",
+      "type": "undefined"
+    },
+    {
+      "id": "t2c5",
+      "fromId": "tree2-child1",
+      "toId": "tree2-grandchild1",
+      "type": "defined"
+    },
+    {
+      "id": "t2c6",
+      "fromId": "tree2-child2",
+      "toId": "tree2-grandchild2",
+      "type": "defined"
+    },
+    {
+      "id": "t2c7",
+      "fromId": "tree2-child3",
+      "toId": "tree2-grandchild3",
+      "type": "defined"
+    },
+    {
+      "id": "t2c8",
+      "fromId": "tree2-child3",
+      "toId": "tree2-grandchild4",
+      "type": "defined"
+    },
+    {
+      "id": "t2c9",
+      "fromId": "tree2-child4",
+      "toId": "tree2-grandchild5",
+      "type": "undefined"
+    },
+    {
+      "id": "t2c10",
+      "fromId": "tree2-grandchild1",
+      "toId": "tree2-greatgrand1",
+      "type": "defined"
+    },
+    {
+      "id": "t2c11",
+      "fromId": "tree2-grandchild3",
+      "toId": "tree2-greatgrand2",
+      "type": "defined"
+    },
+    {
+      "id": "t2c12",
+      "fromId": "tree2-grandchild4",
+      "toId": "tree2-greatgrand3",
+      "type": "undefined"
+    }
+  ],
+  "config": {
+    "initialStartTime": "1680-01-01",
+    "initialEndTime": "2030-12-31"
+  }
+}

@@ -9,6 +9,7 @@ import type { PeriodLayoutAlgorithm } from './greedyPeriodLayout';
 
 interface PeriodNode {
   id: string;
+  name: string;
   startTime: NormalizedTime;
   endTime: NormalizedTime;
   children: PeriodNode[];
@@ -36,11 +37,16 @@ interface PlacedPeriod {
 function buildTrees(
   periods: TimelinePeriod[],
   connectors: TimelineConnector[]
-): { trees: PeriodTree[]; unconnectedPeriods: Map<string, { startTime: NormalizedTime; endTime: NormalizedTime }> } {
+): {
+  trees: PeriodTree[];
+  unconnectedPeriods: Map<string, { name: string; startTime: NormalizedTime; endTime: NormalizedTime }>;
+  periodMap: Map<string, { name: string; startTime: NormalizedTime; endTime: NormalizedTime }>;
+} {
   // Create a map of periods
-  const periodMap = new Map<string, { startTime: NormalizedTime; endTime: NormalizedTime }>();
+  const periodMap = new Map<string, { name: string; startTime: NormalizedTime; endTime: NormalizedTime }>();
   periods.forEach(period => {
     periodMap.set(period.id, {
+      name: period.name,
       startTime: normalizeTime(period.startTime),
       endTime: normalizeTime(period.endTime),
     });
@@ -81,7 +87,8 @@ function buildTrees(
     }
   });
 
-  console.log(`🌳 Found ${roots.length} root nodes:`, roots);
+  const rootsWithNames = roots.map(id => `${id} (${periodMap.get(id)?.name})`);
+  console.log(`🌳 Found ${roots.length} root nodes:`, rootsWithNames);
 
   // For each node, find the oldest root ancestor
   function findOldestRootAncestor(nodeId: string): { rootId: string; rootStartTime: NormalizedTime } | null {
@@ -119,7 +126,9 @@ function buildTrees(
   parentsMap.forEach((parents, childId) => {
     if (parents.length > 1) {
       nodesWithMultipleParents.push(childId);
-      console.log(`🔀 Node ${childId} has ${parents.length} parents:`, parents);
+      const childName = periodMap.get(childId)?.name || childId;
+      const parentsWithNames = parents.map(id => `${id} (${periodMap.get(id)?.name})`);
+      console.log(`🔀 Node ${childId} (${childName}) has ${parents.length} parents:`, parentsWithNames);
 
       // Find oldest root among all possible ancestors
       let oldestRoot: { rootId: string; rootStartTime: NormalizedTime } | null = null;
@@ -135,7 +144,8 @@ function buildTrees(
 
       if (oldestRoot) {
         nodeToTreeRoot.set(childId, oldestRoot.rootId);
-        console.log(`  ➜ Assigned ${childId} to tree with root ${oldestRoot.rootId} (oldest ancestor)`);
+        const rootName = periodMap.get(oldestRoot.rootId)?.name || oldestRoot.rootId;
+        console.log(`  ➜ Assigned ${childId} (${childName}) to tree with root ${oldestRoot.rootId} (${rootName}) (oldest ancestor)`);
       }
     }
   });
@@ -150,13 +160,16 @@ function buildTrees(
 
     // If this node has multiple parents and doesn't belong to this tree, skip it
     if (nodeToTreeRoot.has(periodId) && nodeToTreeRoot.get(periodId) !== currentTreeRoot) {
-      console.log(`⏭️  Skipping ${periodId} in tree ${currentTreeRoot} (belongs to tree ${nodeToTreeRoot.get(periodId)})`);
+      const belongsToRoot = nodeToTreeRoot.get(periodId);
+      const currentRootName = periodMap.get(currentTreeRoot)?.name || currentTreeRoot;
+      const belongsToName = belongsToRoot ? periodMap.get(belongsToRoot)?.name : belongsToRoot;
+      console.log(`⏭️  Skipping ${periodId} (${period.name}) in tree ${currentTreeRoot} (${currentRootName}) (belongs to tree ${belongsToRoot} (${belongsToName}))`);
       return null;
     }
 
     // If this node was already placed in this tree, skip it (prevents cycles)
     if (placedNodes.has(periodId)) {
-      console.log(`🔄 Skipping ${periodId} (already placed, avoiding duplicate)`);
+      console.log(`🔄 Skipping ${periodId} (${period.name}) (already placed, avoiding duplicate)`);
       return null;
     }
 
@@ -164,6 +177,7 @@ function buildTrees(
 
     const node: PeriodNode = {
       id: periodId,
+      name: period.name,
       startTime: period.startTime,
       endTime: period.endTime,
       children: [],
@@ -205,14 +219,14 @@ function buildTrees(
   }
 
   // Find unconnected periods
-  const unconnectedPeriods = new Map<string, { startTime: NormalizedTime; endTime: NormalizedTime }>();
+  const unconnectedPeriods = new Map<string, { name: string; startTime: NormalizedTime; endTime: NormalizedTime }>();
   periodMap.forEach((period, id) => {
     if (!connectedPeriodIds.has(id)) {
       unconnectedPeriods.set(id, period);
     }
   });
 
-  return { trees, unconnectedPeriods };
+  return { trees, unconnectedPeriods, periodMap };
 }
 
 /**
@@ -243,6 +257,7 @@ function hasCollision(
 
 /**
  * Check if placing a node at a given lane would collide with a specific tree
+ * Returns the ID of the colliding period, or null if no collision
  */
 function collidesWithTree(
   startTime: NormalizedTime,
@@ -250,10 +265,11 @@ function collidesWithTree(
   lane: number,
   placedPeriods: PlacedPeriod[],
   treeNodeIds: Set<string>
-): boolean {
-  return placedPeriods.some(
+): string | null {
+  const collision = placedPeriods.find(
     p => treeNodeIds.has(p.id) && p.lane === lane && periodsOverlap(startTime, endTime, p.startTime, p.endTime)
   );
+  return collision ? collision.id : null;
 }
 
 /**
@@ -278,7 +294,8 @@ function collidesWithOtherTrees(
 function layoutTree(
   tree: PeriodTree,
   startParentLane: number,
-  existingPlacements: PlacedPeriod[]
+  existingPlacements: PlacedPeriod[],
+  periodMap: Map<string, { name: string; startTime: NormalizedTime; endTime: NormalizedTime }>
 ): { placements: PlacedPeriod[]; minLane: number; maxLane: number } {
   const placements: PlacedPeriod[] = [];
   let parentLane = startParentLane;
@@ -309,7 +326,8 @@ function layoutTree(
       parentLane,
       [...existingPlacements, ...placements],
       placements,
-      tree.allNodeIds
+      tree.allNodeIds,
+      periodMap
     );
 
     if (success) {
@@ -338,11 +356,12 @@ function placeChildren(
   parentLane: number,
   allPlaced: PlacedPeriod[],
   currentTreePlacements: PlacedPeriod[],
-  treeNodeIds: Set<string>
+  treeNodeIds: Set<string>,
+  periodMap: Map<string, { name: string; startTime: NormalizedTime; endTime: NormalizedTime }>
 ): boolean {
   for (let i = 0; i < children.length; i++) {
     const child = children[i]!;
-    const placed = tryPlaceChild(child, i, parentLane, allPlaced, currentTreePlacements, treeNodeIds);
+    const placed = tryPlaceChild(child, i, parentLane, allPlaced, currentTreePlacements, treeNodeIds, periodMap);
 
     if (!placed) {
       return false; // Need to push whole tree down
@@ -360,9 +379,10 @@ function tryPlaceChild(
   parentLane: number,
   allPlaced: PlacedPeriod[],
   currentTreePlacements: PlacedPeriod[],
-  treeNodeIds: Set<string>
+  treeNodeIds: Set<string>,
+  periodMap: Map<string, { name: string; startTime: NormalizedTime; endTime: NormalizedTime }>
 ): boolean {
-  console.log(`    🔸 Placing child: ${child.id} (parent lane: ${parentLane})`);
+  console.log(`    🔸 Placing child: ${child.id} (${child.name}) (parent lane: ${parentLane})`);
 
   // Generate lane attempts: same, +1, -1, +2, -2, +3, -3, etc.
   const laneAttempts = [parentLane];
@@ -382,8 +402,11 @@ function tryPlaceChild(
     const allPlacedIncludingCurrent = [...allPlaced, ...currentTreePlacements];
 
     // Check collision with same tree
-    if (collidesWithTree(child.startTime, child.endTime, lane, allPlacedIncludingCurrent, treeNodeIds)) {
-      console.log(`      ❌ Collision with same tree at lane ${lane}`);
+    const sameTreeCollision = collidesWithTree(child.startTime, child.endTime, lane, allPlacedIncludingCurrent, treeNodeIds);
+    if (sameTreeCollision) {
+      const collidingPeriod = periodMap.get(sameTreeCollision);
+      const collidingName = collidingPeriod?.name || sameTreeCollision;
+      console.log(`      ❌ Collision with same tree at lane ${lane}: ${sameTreeCollision} (${collidingName})`);
       continue; // Try next lane offset
     }
 
@@ -394,7 +417,7 @@ function tryPlaceChild(
     }
 
     // No collision - place it
-    console.log(`      ✅ Placed ${child.id} at lane ${lane}`);
+    console.log(`      ✅ Placed ${child.id} (${child.name}) at lane ${lane}`);
     currentTreePlacements.push({
       id: child.id,
       lane,
@@ -404,11 +427,11 @@ function tryPlaceChild(
 
     // Recursively place this child's children
     if (child.children.length > 0) {
-      console.log(`      📎 ${child.id} has ${child.children.length} children, placing them...`);
-      const success = placeChildren(child.children, lane, allPlaced, currentTreePlacements, treeNodeIds);
+      console.log(`      📎 ${child.id} (${child.name}) has ${child.children.length} children, placing them...`);
+      const success = placeChildren(child.children, lane, allPlaced, currentTreePlacements, treeNodeIds, periodMap);
       if (!success) {
         // Remove this child and return false
-        console.log(`      ❌ Failed to place children of ${child.id}, removing it`);
+        console.log(`      ❌ Failed to place children of ${child.id} (${child.name}), removing it`);
         currentTreePlacements.pop();
         return false;
       }
@@ -417,7 +440,7 @@ function tryPlaceChild(
     return true;
   }
 
-  console.log(`    ⚠️ Could not place ${child.id} anywhere`);
+  console.log(`    ⚠️ Could not place ${child.id} (${child.name}) anywhere`);
   return false; // Could not place
 }
 
@@ -425,7 +448,7 @@ function tryPlaceChild(
  * Greedily place individual periods in gaps
  */
 function placeIndividualPeriods(
-  unconnectedPeriods: Map<string, { startTime: NormalizedTime; endTime: NormalizedTime }>,
+  unconnectedPeriods: Map<string, { name: string; startTime: NormalizedTime; endTime: NormalizedTime }>,
   existingPlacements: PlacedPeriod[]
 ): PlacedPeriod[] {
   const placements: PlacedPeriod[] = [];
@@ -469,7 +492,7 @@ export const treePeriodLayout: PeriodLayoutAlgorithm = {
     console.log('📊 Input:', { periods: periods.length, connectors: connectors.length });
 
     // Build trees from connectors
-    const { trees, unconnectedPeriods } = buildTrees(periods, connectors);
+    const { trees, unconnectedPeriods, periodMap } = buildTrees(periods, connectors);
 
     console.log('🌳 Trees built:', {
       treeCount: trees.length,
@@ -477,7 +500,7 @@ export const treePeriodLayout: PeriodLayoutAlgorithm = {
     });
 
     trees.forEach((tree, idx) => {
-      console.log(`  Tree ${idx}: root=${tree.root.id}, nodes=${tree.allNodeIds.size}`);
+      console.log(`  Tree ${idx}: root=${tree.root.id} (${tree.root.name}), nodes=${tree.allNodeIds.size}`);
     });
 
     // Layout trees
@@ -486,9 +509,9 @@ export const treePeriodLayout: PeriodLayoutAlgorithm = {
 
     for (let i = 0; i < trees.length; i++) {
       const tree = trees[i]!;
-      console.log(`\n📐 Laying out Tree ${i} (root: ${tree.root.id}) starting at lane ${nextParentLane}`);
+      console.log(`\n📐 Laying out Tree ${i} (root: ${tree.root.id} "${tree.root.name}") starting at lane ${nextParentLane}`);
 
-      const { placements, maxLane } = layoutTree(tree, nextParentLane, allPlacements);
+      const { placements, maxLane } = layoutTree(tree, nextParentLane, allPlacements, periodMap);
 
       console.log(`  ✅ Tree ${i} placed:`, placements.map(p => `${p.id}:L${p.lane}`).join(', '));
       console.log(`  📏 Lanes used: ${Math.min(...placements.map(p => p.lane))} to ${maxLane}`);
