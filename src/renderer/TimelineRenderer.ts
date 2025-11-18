@@ -18,6 +18,7 @@ import type {
 import { normalizeTime } from "../utils/timeNormalization";
 import { assignLanes } from "../layout/laneAssignment";
 import { BIG_BANG_TIME } from "../utils/validation";
+import { CONNECTOR_RENDERERS, DEFAULT_CONNECTOR } from "./connectors";
 
 export class TimelineRenderer {
   private container: HTMLElement;
@@ -59,6 +60,7 @@ export class TimelineRenderer {
         laneGap: 10,
       },
       periodLayoutAlgorithm: options.periodLayoutAlgorithm ?? "greedy",
+      connectorRenderer: options.connectorRenderer ?? DEFAULT_CONNECTOR,
       showRowNumbers: options.showRowNumbers ?? false,
     };
 
@@ -942,6 +944,10 @@ export class TimelineRenderer {
     const toRow = this.rowMapping.get(connector.toId);
     if (fromRow === undefined || toRow === undefined) return;
 
+    // Get the "from" period to extract its color
+    const fromPeriod = this.data.periods.find(p => p.id === connector.fromId);
+    const periodColor = fromPeriod ? "#000" : "#f587f3"; // Default to black for periods
+
     // Calculate the connection point on the "from" period
     // If "to" starts before "from" ends (overlapping periods),
     // connect at the point where "to" begins, not at the end of "from"
@@ -959,45 +965,25 @@ export class TimelineRenderer {
       this.rowToY(toRow, toAssignment.type) +
       this.options.constraints.minPeriodHeight / 2;
 
-    // Simple line connector
-    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute("x1", fromX.toString());
-    line.setAttribute("y1", fromY.toString());
-    line.setAttribute("x2", toX.toString());
-    line.setAttribute("y2", toY.toString());
-    line.setAttribute("stroke", "#f587f3");
-    line.setAttribute("stroke-width", "2");
-
-    if (connector.type === "undefined") {
-      line.setAttribute("stroke-dasharray", "5,5");
-      line.setAttribute("stroke-opacity", "0.5");
-    } else {
-      line.setAttribute("stroke-opacity", "0.7");
+    // Get the connector renderer
+    const renderer = CONNECTOR_RENDERERS[this.options.connectorRenderer];
+    if (!renderer) {
+      console.warn(`Connector renderer not found: ${this.options.connectorRenderer}`);
+      return;
     }
 
-    this.svg.appendChild(line);
+    // Render using the selected connector renderer
+    const elements = renderer.render({
+      fromX,
+      fromY,
+      toX,
+      toY,
+      connectorType: connector.type,
+      color: periodColor,
+      opacity: 0.85,
+    });
 
-    // Arrow head
-    const arrowSize = 6;
-    const angle = Math.atan2(toY - fromY, toX - fromX);
-    const arrowX1 = toX - arrowSize * Math.cos(angle - Math.PI / 6);
-    const arrowY1 = toY - arrowSize * Math.sin(angle - Math.PI / 6);
-    const arrowX2 = toX - arrowSize * Math.cos(angle + Math.PI / 6);
-    const arrowY2 = toY - arrowSize * Math.sin(angle + Math.PI / 6);
-
-    const arrow = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "polygon"
-    );
-    arrow.setAttribute(
-      "points",
-      `${toX},${toY} ${arrowX1},${arrowY1} ${arrowX2},${arrowY2}`
-    );
-    arrow.setAttribute("fill", "#f587f3");
-    arrow.setAttribute(
-      "opacity",
-      connector.type === "undefined" ? "0.5" : "0.7"
-    );
-    this.svg.appendChild(arrow);
+    // Append all elements to SVG
+    elements.forEach(element => this.svg!.appendChild(element));
   }
 }
