@@ -3,11 +3,11 @@
  * Uses smooth cubic Bezier curves that blend into the period bars
  */
 
-import type { ConnectorRenderer, ConnectorRenderContext } from './types';
+import type { ConnectorRenderer, ConnectorRenderContext } from "./types";
 
 export const sigmoidConnector: ConnectorRenderer = {
-  name: 'Sigmoid',
-  description: 'Smooth sigmoid curve that blends into period bars',
+  name: "Sigmoid",
+  description: "Smooth sigmoid curve that blends into period bars",
 
   render(ctx: ConnectorRenderContext): SVGElement[] {
     const elements: SVGElement[] = [];
@@ -35,7 +35,7 @@ export const sigmoidConnector: ConnectorRenderer = {
     const pathData = `M ${ctx.fromX},${ctx.fromY} C ${cp1x},${cp1y} ${cp2x},${cp2y} ${ctx.toX},${ctx.toY}`;
     path.setAttribute("d", pathData);
     path.setAttribute("stroke", ctx.color);
-    path.setAttribute("stroke-width", "2");
+    path.setAttribute("stroke-width", "10");
     path.setAttribute("fill", "none");
 
     if (ctx.connectorType === "undefined") {

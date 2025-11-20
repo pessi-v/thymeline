@@ -187,25 +187,17 @@ export class TimelineRenderer {
     // Ensure we don't zoom out beyond the full data range
     newRange = Math.min(newRange, fullDataRange * 1.05); // 5% padding
 
-    // Center on target time
+    // Center on target time and update viewport bounds first
     this.viewport.centerTime = targetCenter;
     this.viewport.startTime = targetCenter - newRange / 2;
     this.viewport.endTime = targetCenter + newRange / 2;
 
-    // Clamp viewport to not go beyond data range (with small padding)
-    const padding = fullDataRange * 0.025; // 2.5% padding on each side
-    if (this.viewport.startTime < minTime - padding) {
-      const shift = minTime - padding - this.viewport.startTime;
-      this.viewport.startTime += shift;
-      this.viewport.endTime += shift;
-      this.viewport.centerTime += shift;
-    }
-    if (this.viewport.endTime > maxTime + padding) {
-      const shift = this.viewport.endTime - (maxTime + padding);
-      this.viewport.startTime -= shift;
-      this.viewport.endTime -= shift;
-      this.viewport.centerTime -= shift;
-    }
+    // Now apply pan limits with the new time range
+    this.clampPanPosition();
+    // Recalculate bounds after clamping (centerTime may have changed)
+    const timeRange = this.viewport.endTime - this.viewport.startTime;
+    this.viewport.startTime = this.viewport.centerTime - timeRange / 2;
+    this.viewport.endTime = this.viewport.centerTime + timeRange / 2;
 
     this.updateView();
     this.emit("zoom", this.viewport.zoomLevel);
@@ -216,6 +208,7 @@ export class TimelineRenderer {
    */
   panTo(centerTime: TimeInput): void {
     this.viewport.centerTime = normalizeTime(centerTime);
+    this.clampPanPosition();
     this.recalculateViewportBounds();
     this.updateView();
     this.emit("pan", this.viewport.centerTime);
@@ -225,6 +218,7 @@ export class TimelineRenderer {
     const timeRange = this.viewport.endTime - this.viewport.startTime;
     const deltaTime = (deltaPixels / this.options.width) * timeRange;
     this.viewport.centerTime += deltaTime;
+    this.clampPanPosition();
     this.recalculateViewportBounds();
     this.updateView();
     this.emit("pan", this.viewport.centerTime);
@@ -400,6 +394,7 @@ export class TimelineRenderer {
       const deltaTime = (-deltaX / this.options.width) * timeRange;
 
       this.viewport.centerTime = startCenterTime + deltaTime;
+      this.clampPanPosition();
       this.recalculateViewportBounds();
       this.updateView();
       this.emit("pan", this.viewport.centerTime);
@@ -529,6 +524,53 @@ export class TimelineRenderer {
     }
 
     return shortestDuration === Infinity ? null : shortestDuration;
+  }
+
+  /**
+   * Clamp pan position to prevent excessive empty space (15% max on each side)
+   */
+  private clampPanPosition(): void {
+    if (!this.data) return;
+
+    // Get the actual data bounds (without padding)
+    let minTime = Infinity;
+    let maxTime = -Infinity;
+
+    for (const event of this.data.events) {
+      const time = normalizeTime(event.time);
+      minTime = Math.min(minTime, time);
+      maxTime = Math.max(maxTime, time);
+    }
+
+    for (const period of this.data.periods) {
+      const startTime = normalizeTime(period.startTime);
+      const endTime = normalizeTime(period.endTime);
+      minTime = Math.min(minTime, startTime);
+      maxTime = Math.max(maxTime, endTime);
+    }
+
+    if (minTime === Infinity || maxTime === -Infinity) {
+      return; // No data to constrain
+    }
+
+    const timeRange = this.viewport.endTime - this.viewport.startTime;
+
+    // Calculate the maximum allowed empty space in time units
+    // This is 15% of the viewport range (which represents 15% of canvas width)
+    const maxEmptySpaceTime = timeRange * 0.15;
+
+    // Calculate min and max allowed center times
+    // Left limit: viewport.startTime should not be less than (minTime - maxEmptySpaceTime)
+    const minCenterTime = minTime - maxEmptySpaceTime + timeRange / 2;
+
+    // Right limit: viewport.endTime should not be more than (maxTime + maxEmptySpaceTime)
+    const maxCenterTime = maxTime + maxEmptySpaceTime - timeRange / 2;
+
+    // Clamp the center time
+    this.viewport.centerTime = Math.max(
+      minCenterTime,
+      Math.min(maxCenterTime, this.viewport.centerTime)
+    );
   }
 
   /**
