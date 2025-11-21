@@ -57,7 +57,7 @@ export class TimelineRenderer {
         minPeriodHeight: 20,
         maxPeriodHeight: 60,
         laneHeight: 80,
-        laneGap: 10,
+        laneGap: 16,
       },
       periodLayoutAlgorithm: options.periodLayoutAlgorithm ?? "greedy",
       connectorRenderer: options.connectorRenderer ?? DEFAULT_CONNECTOR,
@@ -336,7 +336,7 @@ export class TimelineRenderer {
     const numRows =
       this.rowMapping.size > 0 ? Math.max(...this.rowMapping.values()) + 1 : 1;
     const periodHeight = this.options.constraints.minPeriodHeight;
-    const rowGap = 10;
+    const rowGap = this.options.constraints.laneGap;
     const timeAxisOffset = 60;
     const bottomPadding = 20;
     const calculatedHeight =
@@ -633,12 +633,12 @@ export class TimelineRenderer {
 
   /**
    * Get Y position for a row
-   * Simple row-based positioning with fixed gaps
+   * Simple row-based positioning with configurable gaps
    */
   private rowToY(row: number, type?: "period" | "event"): number {
     const periodHeight = this.options.constraints.minPeriodHeight;
     const eventHeight = 20;
-    const rowGap = 10; // Fixed gap between all rows
+    const rowGap = this.options.constraints.laneGap;
     const timeAxisOffset = 60;
 
     if (type === "period") {
