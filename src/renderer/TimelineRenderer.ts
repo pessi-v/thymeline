@@ -1038,6 +1038,20 @@ export class TimelineRenderer {
 
     if (!fromAssignment || !toAssignment) return;
 
+    // Calculate pixel widths of both periods
+    const fromStartX = this.timeToX(fromAssignment.startTime);
+    const fromEndX = this.timeToX(fromAssignment.endTime);
+    const fromWidth = fromEndX - fromStartX;
+
+    const toStartX = this.timeToX(toAssignment.startTime);
+    const toEndX = this.timeToX(toAssignment.endTime);
+    const toWidth = toEndX - toStartX;
+
+    // Hide connector if either period is less than 10px wide
+    if (fromWidth < 10 || toWidth < 10) {
+      return;
+    }
+
     const fromRow = this.rowMapping.get(connector.fromId);
     const toRow = this.rowMapping.get(connector.toId);
     if (fromRow === undefined || toRow === undefined) return;
