@@ -7,8 +7,9 @@ import * as d3 from "d3";
 import type { ConnectorRenderer, ConnectorRenderContext } from "./types";
 
 export const sigmoidHorizontalLimitedConnector: ConnectorRenderer = {
-  name: "Sigmoid Horizontal Limited",
-  description: "Smooth sigmoid curve that travels horizontally first, with limited curve distance",
+  name: "Sigmoid v3",
+  description:
+    "Smooth sigmoid curve that travels horizontally first, with limited curve distance",
 
   render(ctx: ConnectorRenderContext): SVGElement[] {
     const elements: SVGElement[] = [];
@@ -17,8 +18,19 @@ export const sigmoidHorizontalLimitedConnector: ConnectorRenderer = {
     // - Start 5px to the left of the "from" period
     // - End 5px to the right of the "to" period
     const fromX = ctx.fromX - 5;
-    const fromY = ctx.fromY;
     const toX = ctx.toX + 5;
+
+    // Adjust Y position on 'from' side based on relative position
+    let fromY = ctx.fromY;
+    if (ctx.toY < ctx.fromY) {
+      // Child is above parent - move start point up 5px
+      fromY = ctx.fromY - 5;
+    } else if (ctx.toY > ctx.fromY) {
+      // Child is below parent - move start point down 5px
+      fromY = ctx.fromY + 5;
+    }
+    // If toY === fromY, keep fromY centered (no adjustment)
+
     const toY = ctx.toY;
 
     // Calculate dimensions
@@ -32,14 +44,19 @@ export const sigmoidHorizontalLimitedConnector: ConnectorRenderer = {
 
     // Otherwise, curve to a midpoint and then continue as a straight line
     const isGoingRight = toX > fromX;
-    const curveEndX = isGoingRight ? fromX + maxCurveDistance : fromX - maxCurveDistance;
+    const curveEndX = isGoingRight
+      ? fromX + maxCurveDistance
+      : fromX - maxCurveDistance;
 
     // Create sigmoid curve from start to curve end point
     const sigmoidPath = createSigmoidPath(fromX, fromY, curveEndX, toY);
 
     if (!sigmoidPath) {
       // Fallback to simple line
-      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      const path = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "path"
+      );
       path.setAttribute("d", `M ${fromX},${fromY} L ${toX},${toY}`);
       path.setAttribute("stroke", ctx.color);
       path.setAttribute("stroke-width", "5");

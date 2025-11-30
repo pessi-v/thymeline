@@ -7,7 +7,7 @@ import * as d3 from "d3";
 import type { ConnectorRenderer, ConnectorRenderContext } from "./types";
 
 export const sigmoidHorizontalConnector: ConnectorRenderer = {
-  name: "Sigmoid Horizontal",
+  name: "Sigmoid v2",
   description: "Smooth sigmoid curve that travels horizontally first",
 
   render(ctx: ConnectorRenderContext): SVGElement[] {
