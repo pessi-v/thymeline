@@ -391,9 +391,26 @@ function layoutTree(
     attempts++;
   }
 
-  // Get all branches
-  const branches = getBranches(mainTrunk);
-  console.log(`  🌿 Found ${branches.length} branches`);
+  // Collect all trunks recursively to find all branches
+  const allTrunks: PeriodNode[][] = [mainTrunk];
+  const branches: PeriodNode[][] = [];
+
+  // Keep finding branches until we've processed all trunks
+  let processedCount = 0;
+  while (processedCount < allTrunks.length) {
+    const currentTrunk = allTrunks[processedCount]!;
+    const currentBranches = getBranches(currentTrunk);
+
+    // Add new branches to our lists
+    for (const branch of currentBranches) {
+      branches.push(branch);
+      allTrunks.push(branch);
+    }
+
+    processedCount++;
+  }
+
+  console.log(`  🌿 Found ${branches.length} branches (including sub-branches)`);
 
   // Place branches alternating above and below trunk
   let aboveOffset = 1;

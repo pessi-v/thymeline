@@ -956,6 +956,7 @@ export class TimelineRenderer {
 
     // Period rectangle with fully rounded ends
     const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("id", period.id);
     rect.setAttribute("x", startX.toString());
     rect.setAttribute("y", y.toString());
     rect.setAttribute("width", width.toString());
@@ -1005,6 +1006,7 @@ export class TimelineRenderer {
       "http://www.w3.org/2000/svg",
       "circle"
     );
+    circle.setAttribute("id", event.id);
     circle.setAttribute("cx", x.toString());
     circle.setAttribute("cy", (y + height / 2).toString());
     circle.setAttribute("r", "4");
@@ -1097,7 +1099,10 @@ export class TimelineRenderer {
       opacity: 0.85,
     });
 
-    // Append all elements to SVG
-    elements.forEach((element) => this.svg!.appendChild(element));
+    // Append all elements to SVG and add connector ID
+    elements.forEach((element) => {
+      element.setAttribute("id", connector.id);
+      this.svg!.appendChild(element);
+    });
   }
 }

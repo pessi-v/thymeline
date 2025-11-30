@@ -1,48 +1,31 @@
 /**
- * Sigmoid curve connector renderer
- * Uses D3's sigmoid function for true S-curves
+ * Horizontal sigmoid curve connector renderer
+ * Uses D3's sigmoid function with 90-degree rotation (travels horizontally first)
  */
 
 import * as d3 from "d3";
 import type { ConnectorRenderer, ConnectorRenderContext } from "./types";
 
-export const sigmoidConnector: ConnectorRenderer = {
-  name: "Sigmoid",
-  description: "Smooth sigmoid curve using mathematical sigmoid function",
+export const sigmoidHorizontalConnector: ConnectorRenderer = {
+  name: "Sigmoid Horizontal",
+  description: "Smooth sigmoid curve that travels horizontally first",
 
   render(ctx: ConnectorRenderContext): SVGElement[] {
     const elements: SVGElement[] = [];
 
+    // Adjust connection points:
+    // - Start 5px to the left of the "from" period
+    // - End 5px to the right of the "to" period
+    const fromX = ctx.fromX - 5;
+    const fromY = ctx.fromY;
+    const toX = ctx.toX + 5;
+    const toY = ctx.toY;
+
     // Calculate dimensions
-    const width = Math.abs(ctx.toX - ctx.fromX);
-    const height = Math.abs(ctx.toY - ctx.fromY);
-    const isReversed = ctx.toX < ctx.fromX;
-    const isGoingDown = ctx.toY > ctx.fromY;
-
-    // If the connector is very short, use a simple line
-    // if (width < 10) {
-    //   const path = document.createElementNS(
-    //     "http://www.w3.org/2000/svg",
-    //     "path"
-    //   );
-    //   path.setAttribute(
-    //     "d",
-    //     `M ${ctx.fromX},${ctx.fromY} L ${ctx.toX},${ctx.toY}`
-    //   );
-    //   path.setAttribute("stroke", ctx.color);
-    //   path.setAttribute("stroke-width", "10");
-    //   path.setAttribute("fill", "none");
-
-    //   if (ctx.connectorType === "undefined") {
-    //     path.setAttribute("stroke-dasharray", "5,5");
-    //     path.setAttribute("stroke-opacity", "0.5");
-    //   } else {
-    //     path.setAttribute("stroke-opacity", ctx.opacity.toString());
-    //   }
-
-    //   elements.push(path);
-    //   return elements;
-    // }
+    const width = Math.abs(toX - fromX);
+    const height = Math.abs(toY - fromY);
+    const isReversed = toX < fromX;
+    const isGoingDown = toY > fromY;
 
     // Sigmoid function: 1 / (1 + e^(-2*t))
     const sigmoid = (t: number) => 1 / (1 + Math.exp(-2 * t));
@@ -59,25 +42,26 @@ export const sigmoidConnector: ConnectorRenderer = {
     }
 
     // Create scales to map sigmoid values to our connector coordinates
+    // ROTATED: sigmoid now controls Y position, t controls X position
     const scaleX = d3
       .scaleLinear()
-      .domain([0, 1]) // Sigmoid output range
-      .range(isReversed ? [ctx.fromX, ctx.toX] : [ctx.fromX, ctx.toX]);
+      .domain([0, 1]) // Normalized horizontal progress
+      .range([fromX, toX]);
 
     const scaleY = d3
       .scaleLinear()
-      .domain([0, 1]) // Normalized height
-      .range(isGoingDown ? [ctx.fromY, ctx.toY] : [ctx.toY, ctx.fromY]);
+      .domain([0, 1]) // Sigmoid output range
+      .range([fromY, toY]); // Always map 0->fromY, 1->toY
 
     // Create D3 line generator
     const lineGenerator = d3
       .line<[number, number]>()
-      .x((d) => scaleX(d[0]))
-      .y((d) => {
-        // Map t value to 0-1 range for vertical positioning
+      .x((d) => {
+        // Map t value to 0-1 range for horizontal positioning
         const normalizedT = (d[1] + limit) / (2 * limit);
-        return scaleY(normalizedT);
-      });
+        return scaleX(normalizedT);
+      })
+      .y((d) => scaleY(d[0])); // Sigmoid controls vertical position
 
     // Generate the path data
     const pathData = lineGenerator(sigmoidData);
@@ -88,10 +72,7 @@ export const sigmoidConnector: ConnectorRenderer = {
         "http://www.w3.org/2000/svg",
         "path"
       );
-      path.setAttribute(
-        "d",
-        `M ${ctx.fromX},${ctx.fromY} L ${ctx.toX},${ctx.toY}`
-      );
+      path.setAttribute("d", `M ${fromX},${fromY} L ${toX},${toY}`);
       path.setAttribute("stroke", ctx.color);
       path.setAttribute("stroke-width", "2");
       path.setAttribute("fill", "none");
