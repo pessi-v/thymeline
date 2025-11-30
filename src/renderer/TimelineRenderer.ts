@@ -665,6 +665,11 @@ export class TimelineRenderer {
     // Render time axis
     this.renderTimeAxis();
 
+    // Render connectors first (so they appear behind periods and events)
+    for (const connector of this.data.connectors) {
+      this.renderConnector(connector);
+    }
+
     // Render periods
     for (const period of this.data.periods) {
       this.renderPeriod(period);
@@ -673,11 +678,6 @@ export class TimelineRenderer {
     // Render events
     for (const event of this.data.events) {
       this.renderEvent(event);
-    }
-
-    // Render connectors
-    for (const connector of this.data.connectors) {
-      this.renderConnector(connector);
     }
   }
 
