@@ -9,97 +9,97 @@
   "periods": [
     {
       "id": "p1",
-      "name": "Mechanical Computing",
+      "name": "p1-ROOT",
       "startTime": "1800-01-01",
       "endTime": "1950-01-01"
     },
     {
       "id": "p2",
-      "name": "Electrical Engineering",
+      "name": "p2-ROOT",
       "startTime": "1820-01-01",
       "endTime": "1950-01-01"
     },
     {
       "id": "p3",
-      "name": "Vacuum Tube Era",
+      "name": "p3 (child of p2)",
       "startTime": "1904-01-01",
       "endTime": "1960-01-01"
     },
     {
       "id": "p4",
-      "name": "Digital Computing",
+      "name": "p4 (child of p1, p3)",
       "startTime": "1945-01-01",
       "endTime": "1980-01-01"
     },
     {
       "id": "p5",
-      "name": "Transistor Technology",
+      "name": "p5-ROOT",
       "startTime": "1947-01-01",
       "endTime": "1990-01-01"
     },
     {
       "id": "p6",
-      "name": "Mainframe Era",
+      "name": "p6 (child of p4, p5)",
       "startTime": "1952-01-01",
       "endTime": "1975-01-01"
     },
     {
       "id": "p7",
-      "name": "Minicomputer Era",
+      "name": "p7 (child of p5)",
       "startTime": "1960-01-01",
       "endTime": "1985-01-01"
     },
     {
       "id": "p8",
-      "name": "Integrated Circuits",
+      "name": "p8 (child of p5)",
       "startTime": "1958-01-01",
       "endTime": "2024-01-01"
     },
     {
       "id": "p9",
-      "name": "Personal Computing",
+      "name": "p9 (child of p6, p7, p8)",
       "startTime": "1975-01-01",
       "endTime": "2010-01-01"
     },
     {
       "id": "p10",
-      "name": "Internet Age",
+      "name": "p10 (child of p4)",
       "startTime": "1969-01-01",
       "endTime": "2024-01-01"
     },
     {
       "id": "p11",
-      "name": "Mobile Computing",
+      "name": "p11 (child of p9, p10)",
       "startTime": "1992-01-01",
       "endTime": "2024-01-01"
     },
     {
       "id": "p12",
-      "name": "Cloud Computing",
+      "name": "p12 (child of p10, p11)",
       "startTime": "2006-01-01",
       "endTime": "2024-01-01"
     },
     {
       "id": "p13",
-      "name": "AI/ML Revolution",
+      "name": "p13 (child of p8, p12)",
       "startTime": "2012-01-01",
       "endTime": "2024-01-01"
     },
     {
       "id": "p14",
-      "name": "Quantum Computing",
+      "name": "p14 (child of p8, p13)",
       "startTime": "2019-01-01",
       "endTime": "2024-01-01"
     },
     {
       "id": "p15",
-      "name": "Standalone Tech A",
+      "name": "p15-UNCONNECTED",
       "startTime": "1880-01-01",
       "endTime": "1920-01-01"
     },
     {
       "id": "p16",
-      "name": "Standalone Tech B",
+      "name": "p16-UNCONNECTED",
       "startTime": "1990-01-01",
       "endTime": "2005-01-01"
     }

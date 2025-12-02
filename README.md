@@ -4,14 +4,14 @@ A standalone TypeScript library that renders interactive, zoomable timelines spa
 
 ## Features
 
-- 📅 **Flexible Time Scales**: From geological (billions of years) to precise (milliseconds)
-- 🎨 **Clean, Minimalist Design**: SVG-based rendering with customizable themes
-- 🔍 **Interactive Zoom & Pan**: Smooth navigation across time scales
-- 📊 **Smart Layout**: Automatic lane assignment to prevent overlaps
-- 🔗 **Relationships**: Connect periods with visual connectors
-- 🎯 **Events & Periods**: Support for both point-in-time events and time spans
-- 📦 **Zero Dependencies**: Lightweight and self-contained
-- 🌐 **Multiple Time Formats**: ISO 8601, BCE/CE, geological time, and more
+- **Flexible Time Scales**: From geological (billions of years) to precise (milliseconds)
+- **Clean, Minimalist Design**: SVG-based rendering with customizable themes
+- **Interactive Zoom & Pan**: Smooth navigation across time scales
+- **Smart Layout**: Automatic lane assignment to prevent overlaps
+- **Relationships**: Connect periods with visual connectors
+- **Events & Periods**: Support for both point-in-time events and time spans
+- **Zero Dependencies**: Lightweight and self-contained
+- **Multiple Time Formats**: ISO 8601, BCE/CE, geological time, and more
 
 ## Installation
 
@@ -22,30 +22,30 @@ npm install thymeline
 ## Quick Start
 
 ```typescript
-import { TimelineRenderer } from 'thymeline';
+import { TimelineRenderer } from "thymeline";
 
 // Create timeline data
 const data = {
   events: [
     {
-      id: 'event1',
-      name: 'Moon Landing',
-      time: '1969-07-20T20:17:00Z',
+      id: "event1",
+      name: "Moon Landing",
+      time: "1969-07-20T20:17:00Z",
     },
   ],
   periods: [
     {
-      id: 'period1',
-      name: 'World War II',
-      startTime: '1939-09-01',
-      endTime: '1945-09-02',
+      id: "period1",
+      name: "World War II",
+      startTime: "1939-09-01",
+      endTime: "1945-09-02",
     },
   ],
   connectors: [],
 };
 
 // Initialize renderer
-const renderer = new TimelineRenderer('#timeline-container', {
+const renderer = new TimelineRenderer("#timeline-container", {
   width: 800,
   height: 400,
 });
@@ -88,6 +88,7 @@ const renderer = new TimelineRenderer(selector, options);
 ```
 
 **Options:**
+
 - `width?: number` - Width in pixels (default: container width)
 - `height?: number` - Height in pixels (default: container height)
 - `initialStartTime?: TimeInput` - Initial viewport start time
@@ -100,11 +101,13 @@ const renderer = new TimelineRenderer(selector, options);
 ### Methods
 
 #### Rendering
+
 ```typescript
 renderer.render(timelineData: TimelineData): void
 ```
 
 #### Zoom Controls
+
 ```typescript
 renderer.zoomIn(): void
 renderer.zoomOut(): void
@@ -113,12 +116,14 @@ renderer.setZoomLevel(level: number): void
 ```
 
 #### Pan Controls
+
 ```typescript
 renderer.panTo(centerTime: TimeInput): void
 renderer.panBy(deltaPixels: number): void
 ```
 
 #### Data Manipulation
+
 ```typescript
 renderer.addEvent(event: TimelineEvent): void
 renderer.addPeriod(period: TimelinePeriod): void
@@ -128,12 +133,14 @@ renderer.updateItem(id: string, updates: Partial<TimelineEvent | TimelinePeriod>
 ```
 
 #### Export
+
 ```typescript
 renderer.toSVG(): string
 renderer.toPNG(): Promise<Blob>
 ```
 
 #### Cleanup
+
 ```typescript
 renderer.destroy(): void
 ```
@@ -189,32 +196,18 @@ thymeline/
 
 This is a work in progress. Current implementation includes:
 
-- ✅ Core type definitions
-- ✅ Time normalization system
-- ✅ Basic lane assignment algorithm
-- ✅ Renderer class structure
-- ⏳ SVG rendering (in progress)
-- ⏳ Zoom and pan interactions
-- ⏳ Connector routing
-- ⏳ Visual polish and styling
-- ⏳ Export functionality
-- ⏳ Comprehensive tests
+- Core type definitions
+- Time normalization system
+- Basic lane assignment algorithm
+- Renderer class structure
+- SVG rendering
+- Zoom and pan interactions
+- Connector routing
+- Visual polish and styling
+- Export functionality
 
-See [timeline-renderer-design.md](./timeline-renderer-design.md) for the complete design document.
-
-## Browser Support
-
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
-
-Requires SVG support and ES2020+ features.
+See [timeline-renderer-design.md](./timeline-renderer-design.md) for the initial design document.
 
 ## License
 
 MIT
-
-## Contributing
-
-Contributions are welcome! Please read the design document and feel free to submit pull requests.

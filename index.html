@@ -130,6 +130,20 @@
             <!-- Options populated from PERIOD_LAYOUT_ALGORITHMS -->
           </select>
         </label>
+        <label for="connector-selector" style="margin-right: 10px">
+          <strong>Connectors:</strong>
+          <select
+            id="connector-selector"
+            style="
+              margin-left: 5px;
+              padding: 6px;
+              border-radius: 4px;
+              border: 1px solid #ccc;
+            "
+          >
+            <!-- Options populated from CONNECTOR_RENDERERS -->
+          </select>
+        </label>
         <label for="row-numbers-toggle" style="margin-right: 10px">
           <input type="checkbox" id="row-numbers-toggle" style="margin-left: 5px" />
           <strong>Show Row Numbers</strong>
@@ -154,7 +168,7 @@
     </div>
 
     <script type="module">
-      import { TimelineRenderer, validateTimelineData, formatValidationResult, PERIOD_LAYOUT_ALGORITHMS } from "./src/index.ts";
+      import { TimelineRenderer, validateTimelineData, formatValidationResult, PERIOD_LAYOUT_ALGORITHMS, CONNECTOR_RENDERERS } from "./src/index.ts";
 
       // Use Vite's glob import to automatically discover all example JSON files
       const exampleModules = import.meta.glob('./examples/*.json');
@@ -207,14 +221,34 @@
         });
       }
 
+      // Populate the connector renderer selector
+      function populateConnectorSelector() {
+        const selector = document.getElementById('connector-selector');
+        selector.innerHTML = '';
+
+        Object.entries(CONNECTOR_RENDERERS).forEach(([key, renderer]) => {
+          const option = document.createElement('option');
+          option.value = key;
+          option.textContent = renderer.name;
+          option.title = renderer.description;
+          selector.appendChild(option);
+        });
+      }
+
       // Function to load a timeline
-      function loadTimeline(url, layoutAlgorithm = null) {
+      function loadTimeline(url, layoutAlgorithm = null, connectorRenderer = null) {
         document.getElementById("status").textContent = "Loading timeline...";
 
         // Get current layout algorithm if not specified
         if (layoutAlgorithm === null) {
           const layoutSelector = document.getElementById("layout-selector");
           layoutAlgorithm = layoutSelector.value || 'greedy';
+        }
+
+        // Get current connector renderer if not specified
+        if (connectorRenderer === null) {
+          const connectorSelector = document.getElementById("connector-selector");
+          connectorRenderer = connectorSelector.value || 'sigmoid';
         }
 
         // Get current row numbers toggle state
@@ -265,6 +299,7 @@
               theme: config.theme || "light",
               constraints: config.constraints,
               periodLayoutAlgorithm: layoutAlgorithm,
+              connectorRenderer: connectorRenderer,
               showRowNumbers: showRowNumbers,
             });
 
@@ -298,6 +333,7 @@
       // Populate selectors and load initial timeline
       populateTimelineSelector();
       populateLayoutSelector();
+      populateConnectorSelector();
       if (examples.length > 0) {
         loadTimeline(examples[0].path);
       }
@@ -328,6 +364,15 @@
         .addEventListener("change", (e) => {
           const timelineSelector = document.getElementById("timeline-selector");
           loadTimeline(timelineSelector.value, e.target.value);
+        });
+
+      // Set up connector renderer selector
+      document
+        .getElementById("connector-selector")
+        .addEventListener("change", (e) => {
+          const timelineSelector = document.getElementById("timeline-selector");
+          const layoutSelector = document.getElementById("layout-selector");
+          loadTimeline(timelineSelector.value, layoutSelector.value, e.target.value);
         });
 
       // Set up controls

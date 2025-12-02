@@ -391,68 +391,103 @@ function layoutTree(
     attempts++;
   }
 
-  // Get all branches
-  const branches = getBranches(mainTrunk);
-  console.log(`  🌿 Found ${branches.length} branches`);
+  // Track trunk lanes and their placement direction
+  interface TrunkInfo {
+    trunk: PeriodNode[];
+    parentLane: number;
+    isAboveParent: boolean | null; // null for main trunk
+  }
 
-  // Place branches alternating above and below trunk
-  let aboveOffset = 1;
-  let belowOffset = 1;
-  let placeAbove = true;
+  const trunkQueue: TrunkInfo[] = [{ trunk: mainTrunk, parentLane: trunkLane, isAboveParent: null }];
+  const trunkLanes = new Map<string, number>(); // Map trunk root ID to its lane
+  trunkLanes.set(mainTrunk[0]!.id, trunkLane);
 
-  for (let i = 0; i < branches.length; i++) {
-    const branch = branches[i]!;
-    console.log(`\n  🔸 Placing branch ${i + 1}/${branches.length}: ${branch.map(n => n.name).join(' → ')}`);
+  let queueIndex = 0;
+  while (queueIndex < trunkQueue.length) {
+    const { trunk, parentLane, isAboveParent } = trunkQueue[queueIndex]!;
+    const isMainTrunk = isAboveParent === null;
 
-    let branchLane: number;
-    let placed = false;
-    attempts = 0;
+    // Find branches of this trunk
+    const currentBranches = getBranches(trunk);
 
-    while (!placed && attempts < maxAttempts) {
-      if (placeAbove) {
-        branchLane = trunkLane + aboveOffset;
-      } else {
-        branchLane = trunkLane - belowOffset;
-      }
-
-      if (branchLane < 0) {
-        console.log(`    🔽 Need negative lane (${branchLane}), pushing whole tree down`);
-        // Push entire tree down and restart
-        trunkLane++;
-        placements.length = 0;
-        placeTrunkOnLane(mainTrunk, trunkLane, placements);
-
-        // Reset branch placement
-        aboveOffset = 1;
-        belowOffset = 1;
-        placeAbove = true;
-        i = -1; // Restart branch loop
-        break;
-      }
-
-      const allPlaced = [...existingPlacements, ...placements];
-      if (canPlaceTrunk(branch, branchLane, allPlaced, periodMap)) {
-        placeTrunkOnLane(branch, branchLane, placements);
-        placed = true;
-
-        // Advance offset for next branch
-        if (placeAbove) {
-          aboveOffset++;
-        } else {
-          belowOffset++;
-        }
-        placeAbove = !placeAbove; // Alternate
-      } else {
-        // Try moving away from trunk
-        if (placeAbove) {
-          aboveOffset++;
-        } else {
-          belowOffset++;
-        }
-      }
-
-      attempts++;
+    if (currentBranches.length > 0) {
+      console.log(`  🌿 Found ${currentBranches.length} branches for trunk: ${trunk[0]!.name}`);
     }
+
+    // Determine placement strategy based on parent direction
+    let aboveOffset = 1;
+    let belowOffset = 1;
+    let placeAbove = isMainTrunk ? true : isAboveParent!; // Continue in parent's direction
+
+    for (let i = 0; i < currentBranches.length; i++) {
+      const branch = currentBranches[i]!;
+      const branchRootId = branch[0]!.id;
+      console.log(`\n  🔸 Placing branch ${i + 1}/${currentBranches.length}: ${branch.map(n => n.name).join(' → ')}`);
+
+      let branchLane: number;
+      let placed = false;
+      attempts = 0;
+
+      while (!placed && attempts < maxAttempts) {
+        if (placeAbove) {
+          branchLane = parentLane + aboveOffset;
+        } else {
+          branchLane = parentLane - belowOffset;
+        }
+
+        if (branchLane < 0) {
+          console.log(`    🔽 Need negative lane (${branchLane}), pushing whole tree down`);
+          // Push entire tree down and restart
+          trunkLane++;
+          placements.length = 0;
+          placeTrunkOnLane(mainTrunk, trunkLane, placements);
+
+          // Reset everything
+          trunkQueue.length = 1;
+          trunkQueue[0] = { trunk: mainTrunk, parentLane: trunkLane, isAboveParent: null };
+          trunkLanes.clear();
+          trunkLanes.set(mainTrunk[0]!.id, trunkLane);
+          queueIndex = -1; // Will be incremented to 0
+          break;
+        }
+
+        const allPlaced = [...existingPlacements, ...placements];
+        if (canPlaceTrunk(branch, branchLane, allPlaced, periodMap)) {
+          placeTrunkOnLane(branch, branchLane, placements);
+          placed = true;
+
+          // Track this branch's lane
+          trunkLanes.set(branchRootId, branchLane);
+
+          // Add to queue for processing its sub-branches
+          const branchIsAbove = branchLane > parentLane;
+          trunkQueue.push({ trunk: branch, parentLane: branchLane, isAboveParent: branchIsAbove });
+
+          // Advance offset for next branch
+          if (placeAbove) {
+            aboveOffset++;
+          } else {
+            belowOffset++;
+          }
+
+          // Only alternate for main trunk; sub-branches continue in same direction
+          if (isMainTrunk) {
+            placeAbove = !placeAbove;
+          }
+        } else {
+          // Try moving away from parent
+          if (placeAbove) {
+            aboveOffset++;
+          } else {
+            belowOffset++;
+          }
+        }
+
+        attempts++;
+      }
+    }
+
+    queueIndex++;
   }
 
   // Calculate bounds

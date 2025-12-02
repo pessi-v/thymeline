@@ -1,5 +1,6 @@
 /**
- * Main TimelineRenderer class
+ * Main TimelineRenderer class - Package version
+ * Uses only succession layout and sigmoidHorizontalLimited connector
  */
 
 import type {
@@ -16,9 +17,9 @@ import type {
   ViewportState,
 } from "../core/types";
 import { normalizeTime } from "../utils/timeNormalization";
-import { assignLanes } from "../layout/laneAssignment";
+import { assignLanes } from "../layout/laneAssignment.package";
 import { BIG_BANG_TIME } from "../utils/validation";
-import { CONNECTOR_RENDERERS, DEFAULT_CONNECTOR } from "./connectors";
+import { CONNECTOR_RENDERERS, DEFAULT_CONNECTOR } from "./connectors/package";
 
 export class TimelineRenderer {
   private container: HTMLElement;
@@ -59,7 +60,7 @@ export class TimelineRenderer {
         laneHeight: 80,
         laneGap: 16,
       },
-      periodLayoutAlgorithm: options.periodLayoutAlgorithm ?? "greedy",
+      periodLayoutAlgorithm: options.periodLayoutAlgorithm ?? "succession",
       connectorRenderer: options.connectorRenderer ?? DEFAULT_CONNECTOR,
       showRowNumbers: options.showRowNumbers ?? false,
     };
