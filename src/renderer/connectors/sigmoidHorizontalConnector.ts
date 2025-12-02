@@ -21,11 +21,7 @@ export const sigmoidHorizontalConnector: ConnectorRenderer = {
     const toX = ctx.toX + 5;
     const toY = ctx.toY;
 
-    // Calculate dimensions
-    const width = Math.abs(toX - fromX);
-    const height = Math.abs(toY - fromY);
-    const isReversed = toX < fromX;
-    const isGoingDown = toY > fromY;
+    // No dimension calculations needed for this connector
 
     // Sigmoid function: 1 / (1 + e^(-2*t))
     const sigmoid = (t: number) => 1 / (1 + Math.exp(-2 * t));

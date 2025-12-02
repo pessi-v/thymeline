@@ -1,0 +1,18 @@
+{
+  "events": [
+    {
+      "id": "october-revolution",
+      "name": "October Revolution",
+      "time": "1917-11-07"
+    }
+  ],
+  "periods": [
+    {
+      "id": "karl-marx",
+      "name": "Karl Marx",
+      "endTime": "1883-03-14",
+      "startTime": "1818-05-15"
+    }
+  ],
+  "connectors": []
+}

@@ -1,0 +1,39 @@
+# Source files (only dist/ is needed)
+src/
+tests/
+examples/
+
+# Development files
+vite.config.ts
+vitest.config.ts
+tsconfig.json
+.gitignore
+
+# Documentation (keep LICENSE and package.json)
+*.md
+!README.md
+
+# IDE and editor files
+.vscode/
+.idea/
+.claude/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Test coverage
+coverage/
+*.lcov
+
+# Environment files
+.env
+.env.*

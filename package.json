@@ -1,16 +1,16 @@
 {
   "name": "thymeline",
   "version": "0.1.0",
-  "description": "A standalone TypeScript library that renders interactive, zoomable timelines spanning from geological to modern time scales",
+  "description": "Interactive timeline renderer with succession-based layout algorithm",
   "type": "module",
   "main": "./dist/thymeline.umd.cjs",
   "module": "./dist/thymeline.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/thymeline.js",
-      "require": "./dist/thymeline.umd.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/thymeline.umd.cjs"
     }
   },
   "files": [

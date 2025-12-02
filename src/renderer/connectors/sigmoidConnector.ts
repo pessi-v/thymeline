@@ -14,8 +14,6 @@ export const sigmoidConnector: ConnectorRenderer = {
     const elements: SVGElement[] = [];
 
     // Calculate dimensions
-    const width = Math.abs(ctx.toX - ctx.fromX);
-    const height = Math.abs(ctx.toY - ctx.fromY);
     const isReversed = ctx.toX < ctx.fromX;
     const isGoingDown = ctx.toY > ctx.fromY;
 
