@@ -3,25 +3,34 @@
  */
 
 export type { ConnectorRenderer, ConnectorRenderContext } from "./types";
-export { straightConnector } from "./straightConnector";
-export { sigmoidConnector } from "./sigmoidConnector";
-export { sigmoidHorizontalConnector } from "./sigmoidHorizontalConnector";
 export { sigmoidHorizontalLimitedConnector } from "./sigmoidHorizontalLimitedConnector";
-export { bezierConnector } from "./bezierConnector";
 
 import type { ConnectorRenderer } from "./types";
+import { sigmoidHorizontalLimitedConnector } from "./sigmoidHorizontalLimitedConnector";
+
+// Import debug connectors - tree-shaking will remove them when __DEBUG__ is false
+import { bezierConnector } from "./bezierConnector";
 import { straightConnector } from "./straightConnector";
 import { sigmoidConnector } from "./sigmoidConnector";
 import { sigmoidHorizontalConnector } from "./sigmoidHorizontalConnector";
-import { sigmoidHorizontalLimitedConnector } from "./sigmoidHorizontalLimitedConnector";
-import { bezierConnector } from "./bezierConnector";
 
-export const CONNECTOR_RENDERERS: Record<string, ConnectorRenderer> = {
-  sigmoid: sigmoidConnector,
-  sigmoidHorizontal: sigmoidHorizontalConnector,
-  sigmoidHorizontalLimited: sigmoidHorizontalLimitedConnector,
-  straight: straightConnector,
-  bezier: bezierConnector,
-};
+// Registry of all available connector renderers
+// When __DEBUG__ is false, tree-shaking will remove unused connectors
+export const CONNECTOR_RENDERERS: Record<string, ConnectorRenderer> =
+  /* @__PURE__ */ (() => {
+    const connectors: Record<string, ConnectorRenderer> = {
+      sigmoidHorizontalLimited: sigmoidHorizontalLimitedConnector,
+    };
 
-export const DEFAULT_CONNECTOR = "sigmoid";
+    // In production builds (__DEBUG__ = false), debug connectors are removed by tree-shaking
+    if (__DEBUG__) {
+      connectors.bezier = bezierConnector;
+      connectors.straight = straightConnector;
+      connectors.sigmoid = sigmoidConnector;
+      connectors.sigmoidHorizontal = sigmoidHorizontalConnector;
+    }
+
+    return connectors;
+  })();
+
+export const DEFAULT_CONNECTOR = "sigmoidHorizontalLimited";

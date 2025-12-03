@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import dts from 'vite-plugin-dts';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     dts({
       include: ['src'],
@@ -12,7 +12,7 @@ export default defineConfig({
   ],
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/package.ts'),
+      entry: resolve(__dirname, 'src/index.ts'),
       name: 'Thymeline',
       formats: ['es', 'umd'],
       fileName: (format) => `thymeline.${format === 'es' ? 'js' : 'umd.cjs'}`,
@@ -26,9 +26,13 @@ export default defineConfig({
     sourcemap: true,
     minify: 'esbuild',
   },
+  define: {
+    // Feature flags - true in dev mode, false in production builds
+    __DEBUG__: mode !== 'production',
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
     },
   },
-});
+}));

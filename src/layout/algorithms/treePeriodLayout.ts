@@ -5,7 +5,7 @@
 
 import type { TimelinePeriod, TimelineConnector, LaneAssignment, NormalizedTime } from '../../core/types';
 import { normalizeTime } from '../../utils/timeNormalization';
-import type { PeriodLayoutAlgorithm } from './greedyPeriodLayout';
+import type { PeriodLayoutAlgorithm } from '../laneAssignment';
 
 interface PeriodNode {
   id: string;

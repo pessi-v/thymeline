@@ -5,7 +5,7 @@
 
 import type { TimelinePeriod, TimelineConnector, LaneAssignment, NormalizedTime } from '../../core/types';
 import { normalizeTime } from '../../utils/timeNormalization';
-import type { PeriodLayoutAlgorithm } from './greedyPeriodLayout';
+import type { PeriodLayoutAlgorithm } from '../laneAssignment';
 
 interface PeriodNode {
   id: string;
@@ -50,7 +50,7 @@ function buildTrees(
 
   // Filter to only use "defined" connectors for tree building
   const definedConnectors = connectors.filter(c => c.type === 'defined');
-  console.log(`🔗 Using ${definedConnectors.length} defined connectors out of ${connectors.length} total`);
+  if (__DEBUG__) console.log(`🔗 Using ${definedConnectors.length} defined connectors out of ${connectors.length} total`);
 
   // Build adjacency maps
   const childrenMap = new Map<string, string[]>();
@@ -81,7 +81,7 @@ function buildTrees(
     }
   });
 
-  console.log(`🌳 Found ${roots.length} root nodes:`, roots.map(id => `${id} (${periodMap.get(id)?.name})`));
+  if (__DEBUG__) console.log(`🌳 Found ${roots.length} root nodes:`, roots.map(id => `${id} (${periodMap.get(id)?.name})`));
 
   // Handle DAG: assign multi-parent nodes to oldest root
   const nodeToTreeRoot = new Map<string, string>();
@@ -252,7 +252,7 @@ function buildTrunk(node: PeriodNode): PeriodNode[] {
     }
   }
 
-  console.log(`    🌿 Trunk succession: ${node.id} (${node.name}) → ${trunkChild.id} (${trunkChild.name})`);
+  if (__DEBUG__) console.log(`    🌿 Trunk succession: ${node.id} (${node.name}) → ${trunkChild.id} (${trunkChild.name})`);
 
   // Recursively build trunk from trunk child
   const childTrunk = buildTrunk(trunkChild);
@@ -322,7 +322,7 @@ function canPlaceTrunk(
     const collision = hasCollision(node.startTime, node.endTime, lane, allPlaced);
     if (collision) {
       const collidingPeriod = periodMap.get(collision);
-      console.log(`    ❌ Collision with ${collision} (${collidingPeriod?.name})`);
+      if (__DEBUG__) console.log(`    ❌ Collision with ${collision} (${collidingPeriod?.name})`);
       return false;
     }
   }
@@ -337,7 +337,7 @@ function placeTrunkOnLane(
   lane: number,
   placements: PlacedPeriod[]
 ): void {
-  console.log(`  📍 Placing trunk on lane ${lane}:`, trunk.map(n => `${n.id} (${n.name})`).join(' → '));
+  if (__DEBUG__) console.log(`  📍 Placing trunk on lane ${lane}:`, trunk.map(n => `${n.id} (${n.name})`).join(' → '));
 
   for (const node of trunk) {
     placements.push({
@@ -348,7 +348,7 @@ function placeTrunkOnLane(
     });
   }
 
-  console.log(`    ✅ Placed trunk on lane ${lane}`);
+  if (__DEBUG__) console.log(`    ✅ Placed trunk on lane ${lane}`);
 }
 
 /**
@@ -362,11 +362,11 @@ function layoutTree(
 ): { placements: PlacedPeriod[]; minLane: number; maxLane: number } {
   const placements: PlacedPeriod[] = [];
 
-  console.log(`\n🌲 Building trunk for tree: ${tree.root.id} (${tree.root.name})`);
+  if (__DEBUG__) console.log(`\n🌲 Building trunk for tree: ${tree.root.id} (${tree.root.name})`);
 
   // Build main trunk
   const mainTrunk = buildTrunk(tree.root);
-  console.log(`  🎯 Main trunk has ${mainTrunk.length} periods`);
+  if (__DEBUG__) console.log(`  🎯 Main trunk has ${mainTrunk.length} periods`);
 
   // Find a lane where the trunk fits, starting from startLane
   let trunkLane = startLane;
@@ -375,7 +375,7 @@ function layoutTree(
 
   while (attempts < maxAttempts) {
     if (trunkLane < 0) {
-      console.log(`  🔽 Need negative lane (${trunkLane}), pushing tree down`);
+      if (__DEBUG__) console.log(`  🔽 Need negative lane (${trunkLane}), pushing tree down`);
       trunkLane = 0;
       attempts++;
       continue;
@@ -411,7 +411,7 @@ function layoutTree(
     const currentBranches = getBranches(trunk);
 
     if (currentBranches.length > 0) {
-      console.log(`  🌿 Found ${currentBranches.length} branches for trunk: ${trunk[0]!.name}`);
+      if (__DEBUG__) console.log(`  🌿 Found ${currentBranches.length} branches for trunk: ${trunk[0]!.name}`);
     }
 
     // Determine placement strategy based on parent direction
@@ -422,7 +422,7 @@ function layoutTree(
     for (let i = 0; i < currentBranches.length; i++) {
       const branch = currentBranches[i]!;
       const branchRootId = branch[0]!.id;
-      console.log(`\n  🔸 Placing branch ${i + 1}/${currentBranches.length}: ${branch.map(n => n.name).join(' → ')}`);
+      if (__DEBUG__) console.log(`\n  🔸 Placing branch ${i + 1}/${currentBranches.length}: ${branch.map(n => n.name).join(' → ')}`);
 
       let branchLane: number;
       let placed = false;
@@ -436,7 +436,7 @@ function layoutTree(
         }
 
         if (branchLane < 0) {
-          console.log(`    🔽 Need negative lane (${branchLane}), pushing whole tree down`);
+          if (__DEBUG__) console.log(`    🔽 Need negative lane (${branchLane}), pushing whole tree down`);
           // Push entire tree down and restart
           trunkLane++;
           placements.length = 0;
@@ -542,19 +542,19 @@ export const successionPeriodLayout: PeriodLayoutAlgorithm = {
       return [];
     }
 
-    console.log('👑 Succession Layout Algorithm Starting');
-    console.log('📊 Input:', { periods: periods.length, connectors: connectors.length });
+    if (__DEBUG__) console.log('👑 Succession Layout Algorithm Starting');
+    if (__DEBUG__) console.log('📊 Input:', { periods: periods.length, connectors: connectors.length });
 
     // Build trees from connectors
     const { trees, unconnectedPeriods, periodMap } = buildTrees(periods, connectors);
 
-    console.log('🌳 Trees built:', {
+    if (__DEBUG__) console.log('🌳 Trees built:', {
       treeCount: trees.length,
       unconnectedPeriods: unconnectedPeriods.size
     });
 
     trees.forEach((tree, idx) => {
-      console.log(`  Tree ${idx}: root=${tree.root.id} (${tree.root.name}), nodes=${tree.allNodeIds.size}`);
+      if (__DEBUG__) console.log(`  Tree ${idx}: root=${tree.root.id} (${tree.root.name}), nodes=${tree.allNodeIds.size}`);
     });
 
     // Layout trees (already sorted by age)
@@ -563,23 +563,23 @@ export const successionPeriodLayout: PeriodLayoutAlgorithm = {
 
     for (let i = 0; i < trees.length; i++) {
       const tree = trees[i]!;
-      console.log(`\n📐 Laying out Tree ${i} (root: ${tree.root.id} "${tree.root.name}") starting at lane ${nextStartLane}`);
+      if (__DEBUG__) console.log(`\n📐 Laying out Tree ${i} (root: ${tree.root.id} "${tree.root.name}") starting at lane ${nextStartLane}`);
 
       const { placements, maxLane } = layoutTree(tree, nextStartLane, allPlacements, periodMap);
 
-      console.log(`  ✅ Tree ${i} placed:`, placements.map(p => `${p.id}:L${p.lane}`).join(', '));
-      console.log(`  📏 Lanes used: ${Math.min(...placements.map(p => p.lane))} to ${maxLane}`);
+      if (__DEBUG__) console.log(`  ✅ Tree ${i} placed:`, placements.map(p => `${p.id}:L${p.lane}`).join(', '));
+      if (__DEBUG__) console.log(`  📏 Lanes used: ${Math.min(...placements.map(p => p.lane))} to ${maxLane}`);
 
       allPlacements.push(...placements);
       nextStartLane = maxLane + 1;
     }
 
     // Place individual periods
-    console.log('\n🔹 Placing unconnected periods...');
+    if (__DEBUG__) console.log('\n🔹 Placing unconnected periods...');
     const individualPlacements = placeIndividualPeriods(unconnectedPeriods, allPlacements);
 
     if (individualPlacements.length > 0) {
-      console.log('  ✅ Unconnected placed:', individualPlacements.map(p => `${p.id}:L${p.lane}`).join(', '));
+      if (__DEBUG__) console.log('  ✅ Unconnected placed:', individualPlacements.map(p => `${p.id}:L${p.lane}`).join(', '));
     }
 
     allPlacements.push(...individualPlacements);
@@ -593,11 +593,11 @@ export const successionPeriodLayout: PeriodLayoutAlgorithm = {
       type: 'period' as const,
     }));
 
-    console.log('\n✨ Final lane assignments:');
+    if (__DEBUG__) console.log('\n✨ Final lane assignments:');
     result.forEach(a => {
-      console.log(`  ${a.itemId}: lane ${a.lane}`);
+      if (__DEBUG__) console.log(`  ${a.itemId}: lane ${a.lane}`);
     });
-    console.log('👑 Succession Layout Complete\n');
+    if (__DEBUG__) console.log('👑 Succession Layout Complete\n');
 
     return result;
   },

@@ -90,7 +90,7 @@ export interface RendererOptions {
   maxZoom?: number;
   theme?: 'light' | 'dark' | 'custom';
   constraints?: RenderConstraints;
-  periodLayoutAlgorithm?: string; // Default: 'greedy'
+  periodLayoutAlgorithm?: string; // Default: 'succession'
   connectorRenderer?: string; // Default: 'sigmoid'
   showRowNumbers?: boolean; // Default: false
 }

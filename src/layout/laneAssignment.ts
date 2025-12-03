@@ -6,6 +6,12 @@
 import type { TimelinePeriod, TimelineEvent, TimelineConnector, LaneAssignment } from '../core/types';
 import { PERIOD_LAYOUT_ALGORITHMS, DEFAULT_PERIOD_LAYOUT, assignEventLanes } from './algorithms';
 
+export interface PeriodLayoutAlgorithm {
+  name: string;
+  description: string;
+  layout(periods: TimelinePeriod[], connectors?: TimelineConnector[]): LaneAssignment[];
+}
+
 /**
  * Assign lanes to periods and events
  * Periods and events are assigned to separate lane groups using configurable algorithms

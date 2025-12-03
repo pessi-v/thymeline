@@ -59,7 +59,7 @@ export class TimelineRenderer {
         laneHeight: 80,
         laneGap: 16,
       },
-      periodLayoutAlgorithm: options.periodLayoutAlgorithm ?? "greedy",
+      periodLayoutAlgorithm: options.periodLayoutAlgorithm ?? "succession",
       connectorRenderer: options.connectorRenderer ?? DEFAULT_CONNECTOR,
       showRowNumbers: options.showRowNumbers ?? false,
     };
@@ -747,6 +747,7 @@ export class TimelineRenderer {
 
     // Background
     const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    bg.setAttribute("id", "time-axis-background");
     bg.setAttribute("x", "0");
     bg.setAttribute("y", "0");
     bg.setAttribute("width", this.options.width.toString());

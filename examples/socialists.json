@@ -12,7 +12,50 @@
       "name": "Karl Marx",
       "endTime": "1883-03-14",
       "startTime": "1818-05-15"
+    },
+    {
+      "id": "rosa-luxemburg",
+      "name": "Rosa Luxemburg",
+      "endTime": "1919-01-15",
+      "startTime": "1871-03-05"
+    },
+    {
+      "id": "silvia-federici",
+      "name": "Silvia Federici",
+      "endTime": "2025-12-02T21:03:57.915Z",
+      "startTime": "1942-01-01"
+    },
+    {
+      "id": "first-international",
+      "name": "First International",
+      "endTime": "1876-07-15",
+      "startTime": "1864-09-28"
+    },
+    {
+      "id": "second-international",
+      "name": "Second International",
+      "endTime": "1914-08-04",
+      "startTime": "1889-07-14"
+    },
+    {
+      "id": "anti-authoritarian-international",
+      "name": "Anti-authoritarian International",
+      "endTime": "1877-09-01",
+      "startTime": "1872-09-01"
     }
   ],
-  "connectors": []
+  "connectors": [
+    {
+      "id": "first-international-to-second-international",
+      "toId": "second-international",
+      "type": "undefined",
+      "fromId": "first-international"
+    },
+    {
+      "id": "first-international-to-anti-authoritarian-international",
+      "toId": "anti-authoritarian-international",
+      "type": "undefined",
+      "fromId": "first-international"
+    }
+  ]
 }

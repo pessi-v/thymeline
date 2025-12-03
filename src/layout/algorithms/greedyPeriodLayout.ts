@@ -5,12 +5,7 @@
 
 import type { TimelinePeriod, TimelineConnector, LaneAssignment, NormalizedTime } from '../../core/types';
 import { normalizeTime } from '../../utils/timeNormalization';
-
-export interface PeriodLayoutAlgorithm {
-  name: string;
-  description: string;
-  layout(periods: TimelinePeriod[], connectors?: TimelineConnector[]): LaneAssignment[];
-}
+import type { PeriodLayoutAlgorithm } from '../laneAssignment';
 
 /**
  * Check if a period starts before the last end time in a lane
