@@ -24,12 +24,13 @@ export interface TimelineEvent {
 
 /**
  * Timeline period - represents a span of time
+ * If endTime is undefined, the period is considered "ongoing"
  */
 export interface TimelinePeriod {
   id: string;
   name: string;
   startTime: TimeInput;
-  endTime: TimeInput;
+  endTime?: TimeInput; // Optional - undefined means "ongoing"
   metadata?: Record<string, any>;
 }
 

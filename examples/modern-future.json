@@ -189,55 +189,45 @@
       "id": "period-2",
       "name": "Social Media Era",
       "startTime": "2004-02-04",
-      "endTime": "2025-12-31",
       "metadata": {
         "category": "technology",
-        "description": "Rise of social networking platforms",
-        "ongoing": true
+        "description": "Rise of social networking platforms"
       }
     },
     {
       "id": "period-3",
       "name": "Smartphone Revolution",
       "startTime": "2007-06-29",
-      "endTime": "2025-12-31",
       "metadata": {
         "category": "technology",
-        "description": "Mobile computing becomes dominant",
-        "ongoing": true
+        "description": "Mobile computing becomes dominant"
       }
     },
     {
       "id": "period-4",
       "name": "Cryptocurrency Boom",
       "startTime": "2009-01-03",
-      "endTime": "2025-12-31",
       "metadata": {
         "category": "finance",
-        "description": "Digital currencies and blockchain",
-        "ongoing": true
+        "description": "Digital currencies and blockchain"
       }
     },
     {
       "id": "period-5",
       "name": "Syrian Civil War",
       "startTime": "2011-03-15",
-      "endTime": "2025-12-31",
       "metadata": {
         "category": "conflict",
-        "location": "Syria",
-        "ongoing": true
+        "location": "Syria"
       }
     },
     {
       "id": "period-6",
       "name": "Commercial Space Race",
       "startTime": "2015-01-01",
-      "endTime": "2050-12-31",
       "metadata": {
         "category": "space",
-        "description": "Private companies entering space industry",
-        "ongoing": true
+        "description": "Private companies entering space industry"
       }
     },
     {
@@ -254,11 +244,9 @@
       "id": "period-8",
       "name": "AI Renaissance",
       "startTime": "2022-11-30",
-      "endTime": "2050-12-31",
       "metadata": {
         "category": "AI",
-        "description": "Large language models and generative AI",
-        "ongoing": true
+        "description": "Large language models and generative AI"
       }
     },
     {

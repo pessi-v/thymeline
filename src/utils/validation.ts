@@ -3,7 +3,7 @@
  */
 
 import type { TimelineData } from '../core/types';
-import { normalizeTime } from './timeNormalization';
+import { normalizeTime, normalizeEndTime, isOngoing } from './timeNormalization';
 
 export interface ValidationError {
   type: 'error' | 'warning';
@@ -47,28 +47,35 @@ export function validateTimelineData(data: TimelineData): ValidationResult {
   for (const period of data.periods) {
     try {
       const startTime = normalizeTime(period.startTime);
-      const endTime = normalizeTime(period.endTime);
+      const ongoing = isOngoing(period);
 
-      if (startTime > endTime) {
-        errors.push({
-          type: 'error',
-          message: `Period "${period.name}" has start time after end time`,
-          itemId: period.id,
-        });
+      // Only validate endTime if the period is not ongoing
+      if (!ongoing) {
+        const endTime = normalizeEndTime(period.endTime);
+
+        if (startTime > endTime) {
+          errors.push({
+            type: 'error',
+            message: `Period "${period.name}" has start time after end time`,
+            itemId: period.id,
+          });
+        }
+
+        // Check Big Bang limit for endTime
+        if (endTime < BIG_BANG_TIME) {
+          errors.push({
+            type: 'error',
+            message: `Period "${period.name}" ends before the Big Bang (13.8 billion years ago). End time: ${endTime.toExponential(2)}`,
+            itemId: period.id,
+          });
+        }
       }
 
-      // Check Big Bang limit
+      // Check Big Bang limit for startTime (always checked)
       if (startTime < BIG_BANG_TIME) {
         errors.push({
           type: 'error',
           message: `Period "${period.name}" starts before the Big Bang (13.8 billion years ago). Start time: ${startTime.toExponential(2)}`,
-          itemId: period.id,
-        });
-      }
-      if (endTime < BIG_BANG_TIME) {
-        errors.push({
-          type: 'error',
-          message: `Period "${period.name}" ends before the Big Bang (13.8 billion years ago). End time: ${endTime.toExponential(2)}`,
           itemId: period.id,
         });
       }
@@ -107,17 +114,20 @@ export function validateTimelineData(data: TimelineData): ValidationResult {
 
     // Check temporal logic: warn only if "from" period starts after "to" period ends
     // (overlapping periods are valid and handled by the renderer)
+    // Skip this check if the "to" period is ongoing (has no end time)
     try {
-      const fromStartTime = normalizeTime(fromPeriod.startTime);
-      const toEndTime = normalizeTime(toPeriod.endTime);
+      if (!isOngoing(toPeriod)) {
+        const fromStartTime = normalizeTime(fromPeriod.startTime);
+        const toEndTime = normalizeEndTime(toPeriod.endTime);
 
-      if (fromStartTime > toEndTime) {
-        const timeDiff = fromStartTime - toEndTime;
-        warnings.push({
-          type: 'warning',
-          message: `Connector "${connector.id}" connects "${fromPeriod.name}" → "${toPeriod.name}", but "${fromPeriod.name}" starts ${timeDiff.toFixed(0)} years after "${toPeriod.name}" ends. The periods don't overlap in time.`,
-          itemId: connector.id,
-        });
+        if (fromStartTime > toEndTime) {
+          const timeDiff = fromStartTime - toEndTime;
+          warnings.push({
+            type: 'warning',
+            message: `Connector "${connector.id}" connects "${fromPeriod.name}" → "${toPeriod.name}", but "${fromPeriod.name}" starts ${timeDiff.toFixed(0)} years after "${toPeriod.name}" ends. The periods don't overlap in time.`,
+            itemId: connector.id,
+          });
+        }
       }
     } catch (err) {
       // Time parsing errors already caught in period validation

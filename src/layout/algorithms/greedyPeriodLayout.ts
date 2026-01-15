@@ -4,7 +4,7 @@
  */
 
 import type { TimelinePeriod, TimelineConnector, LaneAssignment, NormalizedTime } from '../../core/types';
-import { normalizeTime } from '../../utils/timeNormalization';
+import { normalizeTime, normalizeEndTime } from '../../utils/timeNormalization';
 import type { PeriodLayoutAlgorithm } from '../laneAssignment';
 
 /**
@@ -31,10 +31,11 @@ export const greedyPeriodLayout: PeriodLayoutAlgorithm = {
     const assignments: LaneAssignment[] = [];
 
     // Normalize and sort periods by start time
+    // Use Infinity for undefined endTime (ongoing periods) to ensure proper layout
     const periodItems = periods.map((period) => ({
       id: period.id,
       startTime: normalizeTime(period.startTime),
-      endTime: normalizeTime(period.endTime),
+      endTime: normalizeEndTime(period.endTime, true), // true = use Infinity for ongoing periods
     }));
 
     periodItems.sort((a, b) => a.startTime - b.startTime);

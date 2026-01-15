@@ -3,7 +3,7 @@
  * Converts various time input formats to a unified representation (years from 0 CE)
  */
 
-import type { TimeInput, NormalizedTime } from '../core/types';
+import type { TimeInput, NormalizedTime, TimelinePeriod } from '../core/types';
 
 /**
  * Normalize any time input to years from 0 CE
@@ -56,10 +56,16 @@ export function normalizeTime(input: TimeInput): NormalizedTime {
  * Convert a JavaScript Date to years from 0 CE
  */
 function dateToYears(date: Date): NormalizedTime {
+  // Check if the date is valid
+  const timestamp = date.getTime();
+  if (isNaN(timestamp)) {
+    throw new Error('Invalid date');
+  }
+
   const year = date.getFullYear();
   const startOfYear = new Date(year, 0, 1).getTime();
   const endOfYear = new Date(year + 1, 0, 1).getTime();
-  const yearProgress = (date.getTime() - startOfYear) / (endOfYear - startOfYear);
+  const yearProgress = (timestamp - startOfYear) / (endOfYear - startOfYear);
 
   return year + yearProgress;
 }
@@ -129,4 +135,32 @@ export function determineTimeScale(
   } else {
     return 'precise';
   }
+}
+
+/**
+ * Get the current time as normalized time (years from 0 CE)
+ */
+export function getCurrentTime(): NormalizedTime {
+  return dateToYears(new Date());
+}
+
+/**
+ * Check if a period is ongoing (has no defined end time)
+ */
+export function isOngoing(period: TimelinePeriod): boolean {
+  return period.endTime === undefined || period.endTime === null;
+}
+
+/**
+ * Normalize the end time of a period, treating undefined as "current time" for display
+ * or a far future date for layout calculations
+ *
+ * @param endTime - The end time input (may be undefined for ongoing periods)
+ * @param useInfinity - If true, return Infinity for undefined; otherwise use current time
+ */
+export function normalizeEndTime(endTime: TimeInput | undefined, useInfinity: boolean = false): NormalizedTime {
+  if (endTime === undefined || endTime === null) {
+    return useInfinity ? Infinity : getCurrentTime();
+  }
+  return normalizeTime(endTime);
 }
