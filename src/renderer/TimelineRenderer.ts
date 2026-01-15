@@ -15,7 +15,7 @@ import type {
   ItemHoverCallback,
   ViewportState,
 } from "../core/types";
-import { normalizeTime } from "../utils/timeNormalization";
+import { normalizeTime, normalizeEndTime, getCurrentTime } from "../utils/timeNormalization";
 import { assignLanes } from "../layout/laneAssignment";
 import { BIG_BANG_TIME } from "../utils/validation";
 import { CONNECTOR_RENDERERS, DEFAULT_CONNECTOR } from "./connectors";
@@ -481,9 +481,10 @@ export class TimelineRenderer {
     }
 
     // Check all periods
+    // For ongoing periods (undefined endTime), use current time for display bounds
     for (const period of data.periods) {
       const startTime = normalizeTime(period.startTime);
-      const endTime = normalizeTime(period.endTime);
+      const endTime = normalizeEndTime(period.endTime, false); // false = use current time, not Infinity
       minTime = Math.min(minTime, startTime);
       maxTime = Math.max(maxTime, endTime);
     }
@@ -506,6 +507,7 @@ export class TimelineRenderer {
 
   /**
    * Find the shortest period duration in the data
+   * Skips ongoing periods (those without endTime)
    */
   private findShortestPeriod(): number | null {
     if (!this.data || this.data.periods.length === 0) {
@@ -515,6 +517,11 @@ export class TimelineRenderer {
     let shortestDuration = Infinity;
 
     for (const period of this.data.periods) {
+      // Skip ongoing periods (undefined endTime)
+      if (period.endTime === undefined || period.endTime === null) {
+        continue;
+      }
+
       const startTime = normalizeTime(period.startTime);
       const endTime = normalizeTime(period.endTime);
       const duration = endTime - startTime;
@@ -545,7 +552,8 @@ export class TimelineRenderer {
 
     for (const period of this.data.periods) {
       const startTime = normalizeTime(period.startTime);
-      const endTime = normalizeTime(period.endTime);
+      // For ongoing periods, use current time for pan bounds
+      const endTime = normalizeEndTime(period.endTime, false); // false = use current time, not Infinity
       minTime = Math.min(minTime, startTime);
       maxTime = Math.max(maxTime, endTime);
     }
@@ -951,7 +959,9 @@ export class TimelineRenderer {
     if (row === undefined) return;
 
     const startX = this.timeToX(assignment.startTime);
-    const endX = this.timeToX(assignment.endTime);
+    // For ongoing periods (endTime = Infinity), render to current time
+    const displayEndTime = assignment.endTime === Infinity ? getCurrentTime() : assignment.endTime;
+    const endX = this.timeToX(displayEndTime);
     const y = this.rowToY(row, "period");
     const width = Math.max(2, endX - startX);
     const height = this.options.constraints.minPeriodHeight;

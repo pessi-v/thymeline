@@ -4,7 +4,7 @@
  */
 
 import type { TimelinePeriod, TimelineConnector, LaneAssignment, NormalizedTime } from '../../core/types';
-import { normalizeTime } from '../../utils/timeNormalization';
+import { normalizeTime, normalizeEndTime } from '../../utils/timeNormalization';
 import type { PeriodLayoutAlgorithm } from '../laneAssignment';
 
 interface PeriodNode {
@@ -43,12 +43,13 @@ function buildTrees(
   periodMap: Map<string, { name: string; startTime: NormalizedTime; endTime: NormalizedTime }>;
 } {
   // Create a map of periods
+  // Use Infinity for undefined endTime (ongoing periods) to ensure proper layout
   const periodMap = new Map<string, { name: string; startTime: NormalizedTime; endTime: NormalizedTime }>();
   periods.forEach(period => {
     periodMap.set(period.id, {
       name: period.name,
       startTime: normalizeTime(period.startTime),
-      endTime: normalizeTime(period.endTime),
+      endTime: normalizeEndTime(period.endTime, true), // true = use Infinity for ongoing periods
     });
   });
 
