@@ -40,11 +40,12 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@js-temporal/polyfill": "^0.5.1",
     "@types/node": "^22.10.1",
     "@vitest/coverage-v8": "^4.0.8",
     "@vitest/ui": "^4.0.0",
     "jsdom": "^27.2.0",
-    "typescript": "^5.9.3",
+    "typescript": "^5.8.2",
     "vite": "^7.0.5",
     "vite-plugin-dts": "^4.5.4",
     "vitest": "^4.0.0"

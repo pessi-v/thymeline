@@ -47,7 +47,7 @@ export class TimelineRenderer {
       width: options.width ?? this.container.clientWidth,
       height: options.height ?? this.container.clientHeight,
       initialStartTime: options.initialStartTime ?? "1900-01-01",
-      initialEndTime: options.initialEndTime ?? new Date().toISOString(),
+      initialEndTime: options.initialEndTime ?? Temporal.Now.instant().toString(),
       minZoom: options.minZoom ?? 0.1,
       maxZoom: options.maxZoom ?? 1_000_000_000, // Support geological/astronomical to human timescales
       theme: options.theme ?? "light",

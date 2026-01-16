@@ -31,6 +31,3 @@ export { PERIOD_LAYOUT_ALGORITHMS, DEFAULT_PERIOD_LAYOUT } from './layout/algori
 export type { PeriodLayoutAlgorithm } from './layout/algorithms';
 export { CONNECTOR_RENDERERS, DEFAULT_CONNECTOR } from './renderer/connectors';
 export type { ConnectorRenderer, ConnectorRenderContext } from './renderer/connectors';
-
-// Default export
-export { TimelineRenderer as default } from './renderer/TimelineRenderer';

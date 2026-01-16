@@ -7,7 +7,7 @@
  */
 export type TimeInput =
   | string // ISO 8601 date string
-  | Date // JavaScript Date object
+  | Temporal.Instant // Temporal Instant for precise UTC timestamps
   | { year: number; era: 'BCE' | 'CE' }
   | { value: number; unit: 'mya' | 'years-ago' }
   | { localTime: string; timezone: string };

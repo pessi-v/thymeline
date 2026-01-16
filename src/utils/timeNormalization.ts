@@ -15,13 +15,29 @@ import type { TimeInput, NormalizedTime, TimelinePeriod } from '../core/types';
 export function normalizeTime(input: TimeInput): NormalizedTime {
   // Handle string (ISO 8601 date string)
   if (typeof input === 'string') {
-    const date = new Date(input);
-    return dateToYears(date);
+    // Check if string has timezone info (Z or +/- offset)
+    const hasTimezone = /Z|[+-]\d{2}:\d{2}$/.test(input);
+    let instant: Temporal.Instant;
+
+    if (hasTimezone) {
+      instant = Temporal.Instant.from(input);
+    } else {
+      // No timezone - treat as UTC
+      // First try as PlainDateTime, then as PlainDate
+      try {
+        const dateTime = Temporal.PlainDateTime.from(input);
+        instant = dateTime.toZonedDateTime('UTC').toInstant();
+      } catch {
+        const date = Temporal.PlainDate.from(input);
+        instant = date.toZonedDateTime('UTC').toInstant();
+      }
+    }
+    return instantToYears(instant);
   }
 
-  // Handle Date object
-  if (input instanceof Date) {
-    return dateToYears(input);
+  // Handle Temporal.Instant
+  if (input instanceof Temporal.Instant) {
+    return instantToYears(input);
   }
 
   // Handle { year: number; era: 'BCE' | 'CE' }
@@ -31,7 +47,7 @@ export function normalizeTime(input: TimeInput): NormalizedTime {
 
   // Handle { value: number; unit: 'mya' | 'years-ago' }
   if ('value' in input && 'unit' in input) {
-    const currentYear = new Date().getFullYear();
+    const currentYear = Temporal.Now.plainDateISO().year;
     if (input.unit === 'mya') {
       // Million years ago
       return -(input.value * 1_000_000);
@@ -43,29 +59,46 @@ export function normalizeTime(input: TimeInput): NormalizedTime {
 
   // Handle { localTime: string; timezone: string }
   if ('localTime' in input && 'timezone' in input) {
-    // For now, parse as ISO string
-    // TODO: Implement proper timezone handling
-    const date = new Date(input.localTime);
-    return dateToYears(date);
+    // Parse local time in the specified timezone and convert to Instant
+    const zonedDateTime = Temporal.PlainDateTime.from(input.localTime)
+      .toZonedDateTime(input.timezone);
+    return instantToYears(zonedDateTime.toInstant());
   }
 
   throw new Error(`Unsupported time input format: ${JSON.stringify(input)}`);
 }
 
 /**
- * Convert a JavaScript Date to years from 0 CE
+ * Convert a Temporal.Instant to years from 0 CE
  */
-function dateToYears(date: Date): NormalizedTime {
-  // Check if the date is valid
-  const timestamp = date.getTime();
-  if (isNaN(timestamp)) {
-    throw new Error('Invalid date');
-  }
+function instantToYears(instant: Temporal.Instant): NormalizedTime {
+  // Convert to ZonedDateTime in UTC to extract year and compute progress
+  const utcDateTime = instant.toZonedDateTimeISO('UTC');
+  const year = utcDateTime.year;
 
-  const year = date.getFullYear();
-  const startOfYear = new Date(year, 0, 1).getTime();
-  const endOfYear = new Date(year + 1, 0, 1).getTime();
-  const yearProgress = (timestamp - startOfYear) / (endOfYear - startOfYear);
+  // Calculate year progress (fraction through the year)
+  const startOfYear = Temporal.ZonedDateTime.from({
+    year,
+    month: 1,
+    day: 1,
+    hour: 0,
+    minute: 0,
+    second: 0,
+    timeZone: 'UTC'
+  });
+  const startOfNextYear = Temporal.ZonedDateTime.from({
+    year: year + 1,
+    month: 1,
+    day: 1,
+    hour: 0,
+    minute: 0,
+    second: 0,
+    timeZone: 'UTC'
+  });
+
+  const yearDurationNs = startOfNextYear.epochNanoseconds - startOfYear.epochNanoseconds;
+  const progressNs = instant.epochNanoseconds - startOfYear.toInstant().epochNanoseconds;
+  const yearProgress = Number(progressNs) / Number(yearDurationNs);
 
   return year + yearProgress;
 }
@@ -95,24 +128,47 @@ export function formatTime(
     // Modern era
     const year = Math.floor(normalizedTime);
     if (scale === 'precise') {
-      const date = yearsToDate(normalizedTime);
-      return date.toISOString();
+      const instant = yearsToInstant(normalizedTime);
+      return instant.toString();
+    }
+    if (scale === 'historical') {
+      return `${year} CE`;
     }
     return year.toString();
   }
 }
 
 /**
- * Convert years from 0 CE back to a JavaScript Date
+ * Convert years from 0 CE back to a Temporal.Instant
  */
-function yearsToDate(years: NormalizedTime): Date {
+function yearsToInstant(years: NormalizedTime): Temporal.Instant {
   const year = Math.floor(years);
   const yearProgress = years - year;
-  const startOfYear = new Date(year, 0, 1).getTime();
-  const endOfYear = new Date(year + 1, 0, 1).getTime();
-  const timestamp = startOfYear + yearProgress * (endOfYear - startOfYear);
 
-  return new Date(timestamp);
+  const startOfYear = Temporal.ZonedDateTime.from({
+    year,
+    month: 1,
+    day: 1,
+    hour: 0,
+    minute: 0,
+    second: 0,
+    timeZone: 'UTC'
+  });
+  const startOfNextYear = Temporal.ZonedDateTime.from({
+    year: year + 1,
+    month: 1,
+    day: 1,
+    hour: 0,
+    minute: 0,
+    second: 0,
+    timeZone: 'UTC'
+  });
+
+  const yearDurationNs = startOfNextYear.epochNanoseconds - startOfYear.epochNanoseconds;
+  const progressNs = BigInt(Math.round(yearProgress * Number(yearDurationNs)));
+  const targetNs = startOfYear.epochNanoseconds + progressNs;
+
+  return Temporal.Instant.fromEpochNanoseconds(targetNs);
 }
 
 /**
@@ -141,7 +197,7 @@ export function determineTimeScale(
  * Get the current time as normalized time (years from 0 CE)
  */
 export function getCurrentTime(): NormalizedTime {
-  return dateToYears(new Date());
+  return instantToYears(Temporal.Now.instant());
 }
 
 /**

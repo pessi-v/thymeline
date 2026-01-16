@@ -295,7 +295,7 @@
                 year: 100,
                 era: "BCE",
               },
-              initialEndTime: config.initialEndTime || new Date().toISOString(),
+              initialEndTime: config.initialEndTime || Temporal.Now.instant().toString(),
               theme: config.theme || "light",
               constraints: config.constraints,
               periodLayoutAlgorithm: layoutAlgorithm,
