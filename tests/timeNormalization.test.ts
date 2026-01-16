@@ -20,9 +20,9 @@ describe('normalizeTime', () => {
     expect(result).toBeCloseTo(2024, 0);
   });
 
-  it('should normalize Date objects', () => {
-    const date = new Date('2024-01-01T00:00:00Z');
-    const result = normalizeTime(date);
+  it('should normalize Temporal.Instant', () => {
+    const instant = Temporal.Instant.from('2024-01-01T00:00:00Z');
+    const result = normalizeTime(instant);
     expect(result).toBeCloseTo(2024, 0);
   });
 });

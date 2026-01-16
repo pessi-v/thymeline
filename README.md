@@ -54,31 +54,6 @@ const renderer = new TimelineRenderer("#timeline-container", {
 renderer.render(data);
 ```
 
-## Time Input Formats
-
-Thymeline supports multiple time input formats:
-
-```typescript
-// ISO 8601 date string
-time: '2024-11-13T10:30:00Z'
-
-// JavaScript Date object
-time: new Date('2024-11-13')
-
-// BCE/CE notation
-time: { year: 500, era: 'BCE' }
-time: { year: 1492, era: 'CE' }
-
-// Geological time (millions of years ago)
-time: { value: 65, unit: 'mya' }
-
-// Years ago
-time: { value: 2000, unit: 'years-ago' }
-
-// With timezone
-time: { localTime: '2024-11-13T10:30:00', timezone: 'America/New_York' }
-```
-
 ## API
 
 ### Constructor
