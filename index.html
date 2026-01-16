@@ -43,6 +43,7 @@
       }
 
       #timeline-container {
+        position: relative;
         background: white;
         border-radius: 8px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -90,6 +91,48 @@
         border-radius: 4px;
         font-size: 14px;
         color: #666;
+      }
+
+      /* Info popup styles */
+      .info-popup {
+        position: absolute;
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 12px 16px;
+        max-width: 250px;
+        min-width: 150px;
+        z-index: 1000;
+      }
+
+      .info-popup-close {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        background: none;
+        border: none;
+        font-size: 18px;
+        line-height: 24px;
+        color: #666;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+
+      .info-popup-close:hover {
+        background: #f0f0f0;
+        color: #333;
+      }
+
+      .info-popup-content {
+        font-size: 14px;
+        color: #333;
+        line-height: 1.5;
+        padding-right: 20px;
+        white-space: pre-wrap;
       }
     </style>
   </head>

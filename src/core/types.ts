@@ -19,6 +19,7 @@ export interface TimelineEvent {
   id: string;
   name: string;
   time: TimeInput;
+  info?: string;
   metadata?: Record<string, any>;
 }
 
@@ -31,6 +32,7 @@ export interface TimelinePeriod {
   name: string;
   startTime: TimeInput;
   endTime?: TimeInput; // Optional - undefined means "ongoing"
+  info?: string;
   metadata?: Record<string, any>;
 }
 

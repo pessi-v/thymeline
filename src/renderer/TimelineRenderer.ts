@@ -15,10 +15,15 @@ import type {
   ItemHoverCallback,
   ViewportState,
 } from "../core/types";
-import { normalizeTime, normalizeEndTime, getCurrentTime } from "../utils/timeNormalization";
+import {
+  normalizeTime,
+  normalizeEndTime,
+  getCurrentTime,
+} from "../utils/timeNormalization";
 import { assignLanes } from "../layout/laneAssignment";
 import { BIG_BANG_TIME } from "../utils/validation";
 import { CONNECTOR_RENDERERS, DEFAULT_CONNECTOR } from "./connectors";
+import { InfoPopup } from "./InfoPopup";
 
 export class TimelineRenderer {
   private container: HTMLElement;
@@ -29,6 +34,7 @@ export class TimelineRenderer {
   private eventListeners: Map<string, Set<Function>> = new Map();
   private laneAssignments: import("../core/types").LaneAssignment[] = [];
   private rowMapping: Map<string, number> = new Map();
+  private infoPopup: InfoPopup | null = null;
 
   constructor(selector: string | HTMLElement, options: RendererOptions = {}) {
     // Get container element
@@ -47,7 +53,8 @@ export class TimelineRenderer {
       width: options.width ?? this.container.clientWidth,
       height: options.height ?? this.container.clientHeight,
       initialStartTime: options.initialStartTime ?? "1900-01-01",
-      initialEndTime: options.initialEndTime ?? Temporal.Now.instant().toString(),
+      initialEndTime:
+        options.initialEndTime ?? Temporal.Now.instant().toString(),
       minZoom: options.minZoom ?? 0.1,
       maxZoom: options.maxZoom ?? 1_000_000_000, // Support geological/astronomical to human timescales
       theme: options.theme ?? "light",
@@ -293,6 +300,10 @@ export class TimelineRenderer {
   }
 
   destroy(): void {
+    if (this.infoPopup) {
+      this.infoPopup.destroy();
+      this.infoPopup = null;
+    }
     if (this.svg) {
       this.svg.remove();
       this.svg = null;
@@ -353,6 +364,11 @@ export class TimelineRenderer {
     this.setupDragToPan();
 
     this.container.appendChild(this.svg);
+
+    // Initialize info popup
+    if (!this.infoPopup) {
+      this.infoPopup = new InfoPopup(this.container);
+    }
   }
 
   /**
@@ -947,6 +963,43 @@ export class TimelineRenderer {
   }
 
   /**
+   * Format TimeInput for display in info popup
+   */
+  private formatTimeForDisplay(time: TimeInput): string {
+    if (typeof time === "string") {
+      // ISO 8601 string - parse and format nicely
+      try {
+        const date = new Date(time);
+        return date.toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      } catch {
+        return time;
+      }
+    } else if (time instanceof Temporal.Instant) {
+      const date = new Date(time.epochMilliseconds);
+      return date.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } else if ("era" in time) {
+      return `${time.year} ${time.era}`;
+    } else if ("unit" in time) {
+      if (time.unit === "mya") {
+        return `${time.value} million years ago`;
+      } else {
+        return `${time.value} years ago`;
+      }
+    } else if ("localTime" in time) {
+      return `${time.localTime} (${time.timezone})`;
+    }
+    return String(time);
+  }
+
+  /**
    * Render a period as a rectangle
    */
   private renderPeriod(period: TimelinePeriod): void {
@@ -960,7 +1013,8 @@ export class TimelineRenderer {
 
     const startX = this.timeToX(assignment.startTime);
     // For ongoing periods (endTime = Infinity), render to current time
-    const displayEndTime = assignment.endTime === Infinity ? getCurrentTime() : assignment.endTime;
+    const displayEndTime =
+      assignment.endTime === Infinity ? getCurrentTime() : assignment.endTime;
     const endX = this.timeToX(displayEndTime);
     const y = this.rowToY(row, "period");
     const width = Math.max(2, endX - startX);
@@ -978,6 +1032,25 @@ export class TimelineRenderer {
     rect.setAttribute("stroke", "#000");
     rect.setAttribute("stroke-width", "1");
     rect.setAttribute("rx", (height / 2).toString()); // Fully rounded ends
+
+    // Add click handler for info popup
+    rect.style.cursor = "pointer";
+    rect.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (this.infoPopup) {
+        const startLabel = this.formatTimeForDisplay(period.startTime);
+        const endLabel = period.endTime
+          ? this.formatTimeForDisplay(period.endTime)
+          : "ongoing";
+        let content = `${period.name}\n${startLabel} – ${endLabel}`;
+        if (period.info) {
+          content += `\n\n${period.info}`;
+        }
+        this.infoPopup.show(content, e.clientX, e.clientY);
+      }
+      this.emit("itemClick", period);
+    });
+
     this.svg.appendChild(rect);
 
     // Label (if there's enough space)
@@ -992,6 +1065,7 @@ export class TimelineRenderer {
       text.setAttribute("font-size", "11");
       text.setAttribute("fill", "#fff");
       text.setAttribute("font-weight", "bold");
+      text.setAttribute("pointer-events", "none");
       text.textContent = period.name;
       this.svg.appendChild(text);
     }
@@ -1025,6 +1099,22 @@ export class TimelineRenderer {
     circle.setAttribute("fill", "none");
     circle.setAttribute("stroke", "#000");
     circle.setAttribute("stroke-width", "2");
+
+    // Add click handler for info popup
+    circle.style.cursor = "pointer";
+    circle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (this.infoPopup) {
+        const timeLabel = this.formatTimeForDisplay(event.time);
+        let content = `${event.name}\n${timeLabel}`;
+        if (event.info) {
+          content += `\n\n${event.info}`;
+        }
+        this.infoPopup.show(content, e.clientX, e.clientY);
+      }
+      this.emit("itemClick", event);
+    });
+
     this.svg.appendChild(circle);
 
     // Label
@@ -1033,6 +1123,7 @@ export class TimelineRenderer {
     text.setAttribute("y", (y + height / 2 + 4).toString());
     text.setAttribute("font-size", "10");
     text.setAttribute("fill", "#333");
+    text.setAttribute("pointer-events", "none");
     text.textContent = event.name;
     this.svg.appendChild(text);
   }
