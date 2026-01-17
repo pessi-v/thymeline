@@ -495,21 +495,5 @@
         "description": "Space race occurred during Cold War"
       }
     }
-  ],
-  "config": {
-    "initialStartTime": {
-      "value": 100,
-      "unit": "mya"
-    },
-    "initialEndTime": "2025-12-31",
-    "theme": "light",
-    "constraints": {
-      "minEventWidth": 2,
-      "maxEventWidth": 20,
-      "minPeriodHeight": 20,
-      "maxPeriodHeight": 60,
-      "laneHeight": 80,
-      "laneGap": 10
-    }
-  }
+  ]
 }

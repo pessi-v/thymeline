@@ -64,8 +64,7 @@ export class TimelineRenderer {
       constraints: options.constraints ?? {
         minEventWidth: 2,
         maxEventWidth: 20,
-        minPeriodHeight: 20,
-        maxPeriodHeight: 60,
+        periodHeight: 28,
         laneHeight: 80,
         laneGap: 40,
       },
@@ -349,7 +348,7 @@ export class TimelineRenderer {
     // Calculate height based on actual number of rows used
     const numRows =
       this.rowMapping.size > 0 ? Math.max(...this.rowMapping.values()) + 1 : 1;
-    const periodHeight = this.options.constraints.minPeriodHeight;
+    const periodHeight = this.options.constraints.periodHeight;
     const rowGap = this.options.constraints.laneGap;
     const timeAxisOffset = 60;
     const bottomPadding = 20;
@@ -664,7 +663,7 @@ export class TimelineRenderer {
    * Simple row-based positioning with configurable gaps
    */
   private rowToY(row: number, type?: "period" | "event"): number {
-    const periodHeight = this.options.constraints.minPeriodHeight;
+    const periodHeight = this.options.constraints.periodHeight;
     const eventHeight = 20;
     const rowGap = this.options.constraints.laneGap;
     const timeAxisOffset = 60;
@@ -693,9 +692,18 @@ export class TimelineRenderer {
     // Render time axis
     this.renderTimeAxis();
 
-    // Render connectors first (so they appear behind periods and events)
+    // Render undefined connectors first (behind all other elements)
     for (const connector of this.data.connectors) {
-      this.renderConnector(connector);
+      if (connector.type === "undefined") {
+        this.renderConnector(connector);
+      }
+    }
+
+    // Render defined connectors (behind periods and events, but above undefined connectors)
+    for (const connector of this.data.connectors) {
+      if (connector.type !== "undefined") {
+        this.renderConnector(connector);
+      }
     }
 
     // Render periods
@@ -717,7 +725,7 @@ export class TimelineRenderer {
 
     const numRows =
       this.rowMapping.size > 0 ? Math.max(...this.rowMapping.values()) + 1 : 0;
-    const periodHeight = this.options.constraints.minPeriodHeight;
+    const periodHeight = this.options.constraints.periodHeight;
 
     for (let row = 0; row < numRows; row++) {
       // Determine if this row contains periods or events
@@ -1021,7 +1029,7 @@ export class TimelineRenderer {
     const endX = this.timeToX(displayEndTime);
     const y = this.rowToY(row, "period");
     const width = Math.max(2, endX - startX);
-    const height = this.options.constraints.minPeriodHeight;
+    const height = this.options.constraints.periodHeight;
 
     // Period rectangle with fully rounded ends
     const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
@@ -1031,7 +1039,7 @@ export class TimelineRenderer {
     rect.setAttribute("width", width.toString());
     rect.setAttribute("height", height.toString());
     rect.setAttribute("fill", "#000");
-    rect.setAttribute("fill-opacity", "0.85");
+    rect.setAttribute("fill-opacity", "1");
     rect.setAttribute("stroke", "#000");
     rect.setAttribute("stroke-width", "1");
     rect.setAttribute("rx", (height / 2).toString()); // Fully rounded ends
@@ -1057,21 +1065,131 @@ export class TimelineRenderer {
     this.svg.appendChild(rect);
 
     // Label (if there's enough space)
-    if (width > 40) {
+    this.renderPeriodLabel(period.name, startX, y, width, height);
+  }
+
+  /**
+   * Render a period label, with two-line layout if needed
+   */
+  private renderPeriodLabel(
+    name: string,
+    startX: number,
+    y: number,
+    width: number,
+    height: number,
+  ): void {
+    if (!this.svg) return;
+
+    const padding = 8; // Horizontal padding inside the period
+    const availableWidth = width - padding * 2;
+
+    if (availableWidth <= 0) return;
+
+    const centerX = startX + width / 2;
+    const fontSize = 11;
+    const lineHeight = fontSize + 2;
+
+    // Create a temporary text element to measure text width
+    const measureText = (str: string): number => {
+      const temp = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "text",
+      );
+      temp.setAttribute("font-size", fontSize.toString());
+      temp.setAttribute("font-weight", "bold");
+      temp.textContent = str;
+      this.svg!.appendChild(temp);
+      const bbox = temp.getBBox();
+      temp.remove();
+      return bbox.width;
+    };
+
+    // Try single line first
+    const singleLineWidth = measureText(name);
+
+    if (singleLineWidth <= availableWidth) {
+      // Single line fits
       const text = document.createElementNS(
         "http://www.w3.org/2000/svg",
         "text",
       );
-      text.setAttribute("x", (startX + width / 2).toString());
-      text.setAttribute("y", (y + height / 2 + 4).toString());
+      text.setAttribute("x", centerX.toString());
+      text.setAttribute("y", (y + height / 2 + fontSize / 3).toString());
       text.setAttribute("text-anchor", "middle");
-      text.setAttribute("font-size", "11");
+      text.setAttribute("font-size", fontSize.toString());
       text.setAttribute("fill", "#fff");
       text.setAttribute("font-weight", "bold");
       text.setAttribute("pointer-events", "none");
-      text.textContent = period.name;
+      text.textContent = name;
       this.svg.appendChild(text);
+      return;
     }
+
+    // Try two lines if there are multiple words
+    const words = name.split(" ");
+    if (words.length < 2) {
+      // Single word that doesn't fit - don't show
+      return;
+    }
+
+    // Find the best split point (closest to middle)
+    let bestSplit = 1;
+    let bestMaxWidth = Infinity;
+
+    for (let i = 1; i < words.length; i++) {
+      const line1 = words.slice(0, i).join(" ");
+      const line2 = words.slice(i).join(" ");
+      const maxWidth = Math.max(measureText(line1), measureText(line2));
+
+      if (maxWidth < bestMaxWidth) {
+        bestMaxWidth = maxWidth;
+        bestSplit = i;
+      }
+    }
+
+    // Check if two lines fit
+    if (bestMaxWidth > availableWidth) {
+      // Even two lines don't fit - don't show
+      return;
+    }
+
+    const line1 = words.slice(0, bestSplit).join(" ");
+    const line2 = words.slice(bestSplit).join(" ");
+
+    // Render two lines
+    const text1 = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "text",
+    );
+    text1.setAttribute("x", centerX.toString());
+    text1.setAttribute(
+      "y",
+      (y + height / 2 - lineHeight / 2 + fontSize / 3).toString(),
+    );
+    text1.setAttribute("text-anchor", "middle");
+    text1.setAttribute("font-size", fontSize.toString());
+    text1.setAttribute("fill", "#fff");
+    text1.setAttribute("font-weight", "bold");
+    text1.setAttribute("pointer-events", "none");
+    text1.textContent = line1;
+    this.svg.appendChild(text1);
+
+    const text2 = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "text",
+    );
+    text2.setAttribute("x", centerX.toString());
+    text2.setAttribute(
+      "y",
+      (y + height / 2 + lineHeight / 2 + fontSize / 3).toString(),
+    );
+    text2.setAttribute("text-anchor", "middle");
+    text2.setAttribute("font-size", fontSize.toString());
+    text2.setAttribute("fill", "#fff");
+    text2.setAttribute("font-weight", "bold");
+    text2.setAttribute("pointer-events", "none");
+    text2.textContent = line2;
+    this.svg.appendChild(text2);
   }
 
   /**
@@ -1180,10 +1298,10 @@ export class TimelineRenderer {
     const toX = this.timeToX(toAssignment.startTime);
     const fromY =
       this.rowToY(fromRow, fromAssignment.type) +
-      this.options.constraints.minPeriodHeight / 2;
+      this.options.constraints.periodHeight / 2;
     const toY =
       this.rowToY(toRow, toAssignment.type) +
-      this.options.constraints.minPeriodHeight / 2;
+      this.options.constraints.periodHeight / 2;
 
     // Get the connector renderer
     const renderer = CONNECTOR_RENDERERS[this.options.connectorRenderer];
