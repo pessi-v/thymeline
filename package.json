@@ -40,7 +40,6 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@js-temporal/polyfill": "^0.5.1",
     "@types/node": "^22.10.1",
     "@vitest/coverage-v8": "^4.0.8",
     "@vitest/ui": "^4.0.0",
@@ -51,6 +50,7 @@
     "vitest": "^4.0.0"
   },
   "dependencies": {
+    "@js-temporal/polyfill": "^0.5.1",
     "d3": "7.9.0"
   },
   "engines": {

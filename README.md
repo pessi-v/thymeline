@@ -167,6 +167,11 @@ thymeline/
 └── dist/              # Built library (generated)
 ```
 
+## Validation Script
+
+Usage:
+npx tsx scripts/validate-timeline.ts <path-to-json>
+
 ## Implementation Status
 
 This is a work in progress. Current implementation includes:

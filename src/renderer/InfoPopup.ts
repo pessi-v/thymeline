@@ -2,6 +2,63 @@
  * InfoPopup - A popup component for displaying info about timeline items
  */
 
+const INFO_POPUP_STYLES = `
+.info-popup {
+  position: absolute;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-width: 300px;
+  min-width: 200px;
+  z-index: 1000;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+}
+
+.info-popup-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #666;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.info-popup-close:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.info-popup-content {
+  padding: 12px 16px;
+  padding-right: 36px;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  color: #333;
+}
+`;
+
+let stylesInjected = false;
+
+function injectStyles(): void {
+  if (stylesInjected) return;
+
+  const styleElement = document.createElement("style");
+  styleElement.setAttribute("data-thymeline-info-popup", "");
+  styleElement.textContent = INFO_POPUP_STYLES;
+  document.head.appendChild(styleElement);
+  stylesInjected = true;
+}
+
 export class InfoPopup {
   private element: HTMLDivElement | null = null;
   private container: HTMLElement;
@@ -9,6 +66,7 @@ export class InfoPopup {
 
   constructor(container: HTMLElement) {
     this.container = container;
+    injectStyles();
   }
 
   /**
