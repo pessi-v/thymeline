@@ -75,8 +75,7 @@ export interface TimelineData {
 export interface RenderConstraints {
   minEventWidth: number; // Minimum pixel width for events
   maxEventWidth: number; // Maximum pixel width for events
-  minPeriodHeight: number; // Minimum pixel height for periods
-  maxPeriodHeight: number; // Maximum pixel height for periods
+  periodHeight: number; // Pixel height for periods
   laneHeight: number; // Vertical spacing between lanes
   laneGap: number; // Gap between lanes
 }
