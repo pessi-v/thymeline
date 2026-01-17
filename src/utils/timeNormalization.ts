@@ -13,6 +13,11 @@ import type { TimeInput, NormalizedTime, TimelinePeriod } from '../core/types';
  * - Historical CE/modern: positive values
  */
 export function normalizeTime(input: TimeInput): NormalizedTime {
+  // Guard against undefined/null input
+  if (input === undefined || input === null) {
+    throw new Error('normalizeTime received undefined or null input. Check that all events have a "time" property and all periods have a "startTime" property.');
+  }
+
   // Handle string (ISO 8601 date string)
   if (typeof input === 'string') {
     // Check if string has timezone info (Z or +/- offset)

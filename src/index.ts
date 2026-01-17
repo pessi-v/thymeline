@@ -3,6 +3,12 @@
  * Main entry point
  */
 
+// Polyfill Temporal API for environments that don't support it natively
+import { Temporal } from '@js-temporal/polyfill';
+if (typeof globalThis.Temporal === 'undefined') {
+  (globalThis as any).Temporal = Temporal;
+}
+
 export { TimelineRenderer } from './renderer/TimelineRenderer';
 
 export type {

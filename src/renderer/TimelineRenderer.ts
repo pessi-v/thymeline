@@ -15,10 +15,15 @@ import type {
   ItemHoverCallback,
   ViewportState,
 } from "../core/types";
-import { normalizeTime, normalizeEndTime, getCurrentTime } from "../utils/timeNormalization";
+import {
+  normalizeTime,
+  normalizeEndTime,
+  getCurrentTime,
+} from "../utils/timeNormalization";
 import { assignLanes } from "../layout/laneAssignment";
 import { BIG_BANG_TIME } from "../utils/validation";
 import { CONNECTOR_RENDERERS, DEFAULT_CONNECTOR } from "./connectors";
+import { InfoPopup } from "./InfoPopup";
 
 export class TimelineRenderer {
   private container: HTMLElement;
@@ -29,6 +34,7 @@ export class TimelineRenderer {
   private eventListeners: Map<string, Set<Function>> = new Map();
   private laneAssignments: import("../core/types").LaneAssignment[] = [];
   private rowMapping: Map<string, number> = new Map();
+  private infoPopup: InfoPopup | null = null;
 
   constructor(selector: string | HTMLElement, options: RendererOptions = {}) {
     // Get container element
@@ -42,12 +48,16 @@ export class TimelineRenderer {
       this.container = selector;
     }
 
+    // Ensure container has relative positioning for info popup placement
+    this.container.style.position = "relative";
+
     // Set default options
     this.options = {
       width: options.width ?? this.container.clientWidth,
       height: options.height ?? this.container.clientHeight,
       initialStartTime: options.initialStartTime ?? "1900-01-01",
-      initialEndTime: options.initialEndTime ?? Temporal.Now.instant().toString(),
+      initialEndTime:
+        options.initialEndTime ?? Temporal.Now.instant().toString(),
       minZoom: options.minZoom ?? 0.1,
       maxZoom: options.maxZoom ?? 1_000_000_000, // Support geological/astronomical to human timescales
       theme: options.theme ?? "light",
@@ -57,7 +67,7 @@ export class TimelineRenderer {
         minPeriodHeight: 20,
         maxPeriodHeight: 60,
         laneHeight: 80,
-        laneGap: 16,
+        laneGap: 40,
       },
       periodLayoutAlgorithm: options.periodLayoutAlgorithm ?? "succession",
       connectorRenderer: options.connectorRenderer ?? DEFAULT_CONNECTOR,
@@ -95,7 +105,7 @@ export class TimelineRenderer {
       timelineData.periods,
       timelineData.events,
       this.options.periodLayoutAlgorithm,
-      timelineData.connectors
+      timelineData.connectors,
     );
 
     // Store assignments for rendering
@@ -150,7 +160,7 @@ export class TimelineRenderer {
     const currentViewRange = this.viewport.endTime - this.viewport.startTime;
     const dynamicMinZoom = Math.min(
       this.options.minZoom,
-      oldZoomLevel * (currentViewRange / fullDataRange)
+      oldZoomLevel * (currentViewRange / fullDataRange),
     );
 
     // Calculate the maximum zoom in level (shortest period occupies 10% of canvas)
@@ -163,14 +173,14 @@ export class TimelineRenderer {
       // maxZoomLevel = fullDataRange / minTimeRange
       dynamicMaxZoom = Math.min(
         this.options.maxZoom,
-        fullDataRange / minTimeRange
+        fullDataRange / minTimeRange,
       );
     }
 
     // Clamp the new zoom level
     const newZoomLevel = Math.max(
       dynamicMinZoom,
-      Math.min(dynamicMaxZoom, level)
+      Math.min(dynamicMaxZoom, level),
     );
 
     // If zoom level didn't change (hit limits), don't update
@@ -255,7 +265,7 @@ export class TimelineRenderer {
 
   updateItem(
     id: string,
-    updates: Partial<TimelineEvent | TimelinePeriod>
+    updates: Partial<TimelineEvent | TimelinePeriod>,
   ): void {
     if (!this.data) return;
 
@@ -293,6 +303,10 @@ export class TimelineRenderer {
   }
 
   destroy(): void {
+    if (this.infoPopup) {
+      this.infoPopup.destroy();
+      this.infoPopup = null;
+    }
     if (this.svg) {
       this.svg.remove();
       this.svg = null;
@@ -353,6 +367,11 @@ export class TimelineRenderer {
     this.setupDragToPan();
 
     this.container.appendChild(this.svg);
+
+    // Initialize info popup
+    if (!this.infoPopup) {
+      this.infoPopup = new InfoPopup(this.container);
+    }
   }
 
   /**
@@ -578,7 +597,7 @@ export class TimelineRenderer {
     // Clamp the center time
     this.viewport.centerTime = Math.max(
       minCenterTime,
-      Math.min(maxCenterTime, this.viewport.centerTime)
+      Math.min(maxCenterTime, this.viewport.centerTime),
     );
   }
 
@@ -609,18 +628,18 @@ export class TimelineRenderer {
 
     // Separate periods and events
     const periodAssignments = this.laneAssignments.filter(
-      (a) => a.type === "period"
+      (a) => a.type === "period",
     );
     const eventAssignments = this.laneAssignments.filter(
-      (a) => a.type === "event"
+      (a) => a.type === "event",
     );
 
     // Get unique lanes and sort them
     const periodLanes = [...new Set(periodAssignments.map((a) => a.lane))].sort(
-      (a, b) => a - b
+      (a, b) => a - b,
     );
     const eventLanes = [...new Set(eventAssignments.map((a) => a.lane))].sort(
-      (a, b) => a - b
+      (a, b) => a - b,
     );
 
     // Map period lanes to sequential rows
@@ -706,7 +725,7 @@ export class TimelineRenderer {
       for (const [itemId, itemRow] of this.rowMapping.entries()) {
         if (itemRow === row) {
           const assignment = this.laneAssignments.find(
-            (a) => a.itemId === itemId
+            (a) => a.itemId === itemId,
           );
           if (assignment?.type === "period") {
             isEventRow = false;
@@ -720,7 +739,7 @@ export class TimelineRenderer {
       // Row number background
       const rect = document.createElementNS(
         "http://www.w3.org/2000/svg",
-        "rect"
+        "rect",
       );
       rect.setAttribute("x", "0");
       rect.setAttribute("y", y.toString());
@@ -734,7 +753,7 @@ export class TimelineRenderer {
       // Row number text
       const text = document.createElementNS(
         "http://www.w3.org/2000/svg",
-        "text"
+        "text",
       );
       text.setAttribute("x", "15");
       text.setAttribute("y", (y + periodHeight / 2 + 4).toString());
@@ -794,7 +813,7 @@ export class TimelineRenderer {
       // Tick mark
       const tick = document.createElementNS(
         "http://www.w3.org/2000/svg",
-        "line"
+        "line",
       );
       tick.setAttribute("x1", pixelPosition.toString());
       tick.setAttribute("y1", "40");
@@ -808,7 +827,7 @@ export class TimelineRenderer {
       if (time >= BIG_BANG_TIME) {
         const text = document.createElementNS(
           "http://www.w3.org/2000/svg",
-          "text"
+          "text",
         );
         text.setAttribute("x", pixelPosition.toString());
         text.setAttribute("y", "25");
@@ -854,7 +873,7 @@ export class TimelineRenderer {
     // Create noise pattern using SVG filter
     const filter = document.createElementNS(
       "http://www.w3.org/2000/svg",
-      "filter"
+      "filter",
     );
     filter.setAttribute("id", "noise-filter");
     filter.setAttribute("x", "0");
@@ -864,7 +883,7 @@ export class TimelineRenderer {
 
     const turbulence = document.createElementNS(
       "http://www.w3.org/2000/svg",
-      "feTurbulence"
+      "feTurbulence",
     );
     turbulence.setAttribute("type", "fractalNoise");
     turbulence.setAttribute("baseFrequency", "2.5");
@@ -873,13 +892,13 @@ export class TimelineRenderer {
 
     const colorMatrix = document.createElementNS(
       "http://www.w3.org/2000/svg",
-      "feColorMatrix"
+      "feColorMatrix",
     );
     colorMatrix.setAttribute("in", "noise");
     colorMatrix.setAttribute("type", "matrix");
     colorMatrix.setAttribute(
       "values",
-      "0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 1 0"
+      "0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 1 0",
     );
 
     filter.appendChild(turbulence);
@@ -890,7 +909,7 @@ export class TimelineRenderer {
     if (bigBangX > 0) {
       const noiseRect = document.createElementNS(
         "http://www.w3.org/2000/svg",
-        "rect"
+        "rect",
       );
       noiseRect.setAttribute("x", "0");
       noiseRect.setAttribute("y", "40");
@@ -904,7 +923,7 @@ export class TimelineRenderer {
       // Draw vertical line at Big Bang (dashed and thicker)
       const bigBangLine = document.createElementNS(
         "http://www.w3.org/2000/svg",
-        "line"
+        "line",
       );
       bigBangLine.setAttribute("x1", bigBangX.toString());
       bigBangLine.setAttribute("y1", "40");
@@ -918,7 +937,7 @@ export class TimelineRenderer {
       // Add label for Big Bang
       const label = document.createElementNS(
         "http://www.w3.org/2000/svg",
-        "text"
+        "text",
       );
       label.setAttribute("x", (bigBangX - 5).toString());
       label.setAttribute("y", "55");
@@ -947,6 +966,43 @@ export class TimelineRenderer {
   }
 
   /**
+   * Format TimeInput for display in info popup
+   */
+  private formatTimeForDisplay(time: TimeInput): string {
+    if (typeof time === "string") {
+      // ISO 8601 string - parse and format nicely
+      try {
+        const date = new Date(time);
+        return date.toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      } catch {
+        return time;
+      }
+    } else if (time instanceof Temporal.Instant) {
+      const date = new Date(time.epochMilliseconds);
+      return date.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } else if ("era" in time) {
+      return `${time.year} ${time.era}`;
+    } else if ("unit" in time) {
+      if (time.unit === "mya") {
+        return `${time.value} million years ago`;
+      } else {
+        return `${time.value} years ago`;
+      }
+    } else if ("localTime" in time) {
+      return `${time.localTime} (${time.timezone})`;
+    }
+    return String(time);
+  }
+
+  /**
    * Render a period as a rectangle
    */
   private renderPeriod(period: TimelinePeriod): void {
@@ -960,7 +1016,8 @@ export class TimelineRenderer {
 
     const startX = this.timeToX(assignment.startTime);
     // For ongoing periods (endTime = Infinity), render to current time
-    const displayEndTime = assignment.endTime === Infinity ? getCurrentTime() : assignment.endTime;
+    const displayEndTime =
+      assignment.endTime === Infinity ? getCurrentTime() : assignment.endTime;
     const endX = this.timeToX(displayEndTime);
     const y = this.rowToY(row, "period");
     const width = Math.max(2, endX - startX);
@@ -978,13 +1035,32 @@ export class TimelineRenderer {
     rect.setAttribute("stroke", "#000");
     rect.setAttribute("stroke-width", "1");
     rect.setAttribute("rx", (height / 2).toString()); // Fully rounded ends
+
+    // Add click handler for info popup
+    rect.style.cursor = "pointer";
+    rect.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (this.infoPopup) {
+        const startLabel = this.formatTimeForDisplay(period.startTime);
+        const endLabel = period.endTime
+          ? this.formatTimeForDisplay(period.endTime)
+          : "ongoing";
+        let content = `${period.name}\n${startLabel} – ${endLabel}`;
+        if (period.info) {
+          content += `\n\n${period.info}`;
+        }
+        this.infoPopup.show(content, e.clientX, e.clientY);
+      }
+      this.emit("itemClick", period);
+    });
+
     this.svg.appendChild(rect);
 
     // Label (if there's enough space)
     if (width > 40) {
       const text = document.createElementNS(
         "http://www.w3.org/2000/svg",
-        "text"
+        "text",
       );
       text.setAttribute("x", (startX + width / 2).toString());
       text.setAttribute("y", (y + height / 2 + 4).toString());
@@ -992,6 +1068,7 @@ export class TimelineRenderer {
       text.setAttribute("font-size", "11");
       text.setAttribute("fill", "#fff");
       text.setAttribute("font-weight", "bold");
+      text.setAttribute("pointer-events", "none");
       text.textContent = period.name;
       this.svg.appendChild(text);
     }
@@ -1016,7 +1093,7 @@ export class TimelineRenderer {
     // Event marker (hollow circle, smaller)
     const circle = document.createElementNS(
       "http://www.w3.org/2000/svg",
-      "circle"
+      "circle",
     );
     circle.setAttribute("id", event.id);
     circle.setAttribute("cx", x.toString());
@@ -1025,6 +1102,22 @@ export class TimelineRenderer {
     circle.setAttribute("fill", "none");
     circle.setAttribute("stroke", "#000");
     circle.setAttribute("stroke-width", "2");
+
+    // Add click handler for info popup
+    circle.style.cursor = "pointer";
+    circle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (this.infoPopup) {
+        const timeLabel = this.formatTimeForDisplay(event.time);
+        let content = `${event.name}\n${timeLabel}`;
+        if (event.info) {
+          content += `\n\n${event.info}`;
+        }
+        this.infoPopup.show(content, e.clientX, e.clientY);
+      }
+      this.emit("itemClick", event);
+    });
+
     this.svg.appendChild(circle);
 
     // Label
@@ -1033,6 +1126,7 @@ export class TimelineRenderer {
     text.setAttribute("y", (y + height / 2 + 4).toString());
     text.setAttribute("font-size", "10");
     text.setAttribute("fill", "#333");
+    text.setAttribute("pointer-events", "none");
     text.textContent = event.name;
     this.svg.appendChild(text);
   }
@@ -1044,10 +1138,10 @@ export class TimelineRenderer {
     if (!this.svg || !this.data) return;
 
     const fromAssignment = this.laneAssignments.find(
-      (a) => a.itemId === connector.fromId
+      (a) => a.itemId === connector.fromId,
     );
     const toAssignment = this.laneAssignments.find(
-      (a) => a.itemId === connector.toId
+      (a) => a.itemId === connector.toId,
     );
 
     if (!fromAssignment || !toAssignment) return;
@@ -1080,7 +1174,7 @@ export class TimelineRenderer {
     // This prevents connectors from going backward in time
     const connectionTime = Math.min(
       fromAssignment.endTime,
-      toAssignment.startTime
+      toAssignment.startTime,
     );
     const fromX = this.timeToX(connectionTime);
     const toX = this.timeToX(toAssignment.startTime);
@@ -1095,7 +1189,7 @@ export class TimelineRenderer {
     const renderer = CONNECTOR_RENDERERS[this.options.connectorRenderer];
     if (!renderer) {
       console.warn(
-        `Connector renderer not found: ${this.options.connectorRenderer}`
+        `Connector renderer not found: ${this.options.connectorRenderer}`,
       );
       return;
     }
