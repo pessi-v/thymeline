@@ -1066,11 +1066,42 @@ export class TimelineRenderer {
     this.svg.appendChild(rect);
 
     // Label (if there's enough space)
-    this.renderPeriodLabel(period.name, startX, y, width, height);
+    const labelShown = this.renderPeriodLabel(period.name, startX, y, width, height);
+
+    // Add hover label for periods with hidden labels
+    if (!labelShown) {
+      let hoverLabel: SVGTextElement | null = null;
+
+      rect.addEventListener("mouseenter", () => {
+        if (!this.svg) return;
+
+        hoverLabel = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "text",
+        );
+        hoverLabel.setAttribute("x", (startX + width / 2).toString());
+        hoverLabel.setAttribute("y", (y + height + 14).toString());
+        hoverLabel.setAttribute("text-anchor", "middle");
+        hoverLabel.setAttribute("font-size", "11");
+        hoverLabel.setAttribute("fill", "#000");
+        hoverLabel.setAttribute("font-weight", "bold");
+        hoverLabel.setAttribute("pointer-events", "none");
+        hoverLabel.textContent = period.name;
+        this.svg.appendChild(hoverLabel);
+      });
+
+      rect.addEventListener("mouseleave", () => {
+        if (hoverLabel) {
+          hoverLabel.remove();
+          hoverLabel = null;
+        }
+      });
+    }
   }
 
   /**
    * Render a period label, with two-line layout if needed
+   * Returns true if label was shown, false if hidden
    */
   private renderPeriodLabel(
     name: string,
@@ -1078,13 +1109,13 @@ export class TimelineRenderer {
     y: number,
     width: number,
     height: number,
-  ): void {
-    if (!this.svg) return;
+  ): boolean {
+    if (!this.svg) return false;
 
     const padding = 8; // Horizontal padding inside the period
     const availableWidth = width - padding * 2;
 
-    if (availableWidth <= 0) return;
+    if (availableWidth <= 0) return false;
 
     const centerX = startX + width / 2;
     const fontSize = 11;
@@ -1123,14 +1154,14 @@ export class TimelineRenderer {
       text.setAttribute("pointer-events", "none");
       text.textContent = name;
       this.svg.appendChild(text);
-      return;
+      return true;
     }
 
     // Try two lines if there are multiple words
     const words = name.split(" ");
     if (words.length < 2) {
       // Single word that doesn't fit - don't show
-      return;
+      return false;
     }
 
     // Find the best split point (closest to middle)
@@ -1151,7 +1182,7 @@ export class TimelineRenderer {
     // Check if two lines fit
     if (bestMaxWidth > availableWidth) {
       // Even two lines don't fit - don't show
-      return;
+      return false;
     }
 
     const line1 = words.slice(0, bestSplit).join(" ");
@@ -1191,6 +1222,8 @@ export class TimelineRenderer {
     text2.setAttribute("pointer-events", "none");
     text2.textContent = line2;
     this.svg.appendChild(text2);
+
+    return true;
   }
 
   /**
