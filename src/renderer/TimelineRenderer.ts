@@ -48,6 +48,9 @@ export class TimelineRenderer {
       this.container = selector;
     }
 
+    // Ensure container has relative positioning for info popup placement
+    this.container.style.position = "relative";
+
     // Set default options
     this.options = {
       width: options.width ?? this.container.clientWidth,
@@ -64,7 +67,7 @@ export class TimelineRenderer {
         minPeriodHeight: 20,
         maxPeriodHeight: 60,
         laneHeight: 80,
-        laneGap: 16,
+        laneGap: 40,
       },
       periodLayoutAlgorithm: options.periodLayoutAlgorithm ?? "succession",
       connectorRenderer: options.connectorRenderer ?? DEFAULT_CONNECTOR,
@@ -102,7 +105,7 @@ export class TimelineRenderer {
       timelineData.periods,
       timelineData.events,
       this.options.periodLayoutAlgorithm,
-      timelineData.connectors
+      timelineData.connectors,
     );
 
     // Store assignments for rendering
@@ -157,7 +160,7 @@ export class TimelineRenderer {
     const currentViewRange = this.viewport.endTime - this.viewport.startTime;
     const dynamicMinZoom = Math.min(
       this.options.minZoom,
-      oldZoomLevel * (currentViewRange / fullDataRange)
+      oldZoomLevel * (currentViewRange / fullDataRange),
     );
 
     // Calculate the maximum zoom in level (shortest period occupies 10% of canvas)
@@ -170,14 +173,14 @@ export class TimelineRenderer {
       // maxZoomLevel = fullDataRange / minTimeRange
       dynamicMaxZoom = Math.min(
         this.options.maxZoom,
-        fullDataRange / minTimeRange
+        fullDataRange / minTimeRange,
       );
     }
 
     // Clamp the new zoom level
     const newZoomLevel = Math.max(
       dynamicMinZoom,
-      Math.min(dynamicMaxZoom, level)
+      Math.min(dynamicMaxZoom, level),
     );
 
     // If zoom level didn't change (hit limits), don't update
@@ -262,7 +265,7 @@ export class TimelineRenderer {
 
   updateItem(
     id: string,
-    updates: Partial<TimelineEvent | TimelinePeriod>
+    updates: Partial<TimelineEvent | TimelinePeriod>,
   ): void {
     if (!this.data) return;
 
@@ -594,7 +597,7 @@ export class TimelineRenderer {
     // Clamp the center time
     this.viewport.centerTime = Math.max(
       minCenterTime,
-      Math.min(maxCenterTime, this.viewport.centerTime)
+      Math.min(maxCenterTime, this.viewport.centerTime),
     );
   }
 
@@ -625,18 +628,18 @@ export class TimelineRenderer {
 
     // Separate periods and events
     const periodAssignments = this.laneAssignments.filter(
-      (a) => a.type === "period"
+      (a) => a.type === "period",
     );
     const eventAssignments = this.laneAssignments.filter(
-      (a) => a.type === "event"
+      (a) => a.type === "event",
     );
 
     // Get unique lanes and sort them
     const periodLanes = [...new Set(periodAssignments.map((a) => a.lane))].sort(
-      (a, b) => a - b
+      (a, b) => a - b,
     );
     const eventLanes = [...new Set(eventAssignments.map((a) => a.lane))].sort(
-      (a, b) => a - b
+      (a, b) => a - b,
     );
 
     // Map period lanes to sequential rows
@@ -722,7 +725,7 @@ export class TimelineRenderer {
       for (const [itemId, itemRow] of this.rowMapping.entries()) {
         if (itemRow === row) {
           const assignment = this.laneAssignments.find(
-            (a) => a.itemId === itemId
+            (a) => a.itemId === itemId,
           );
           if (assignment?.type === "period") {
             isEventRow = false;
@@ -736,7 +739,7 @@ export class TimelineRenderer {
       // Row number background
       const rect = document.createElementNS(
         "http://www.w3.org/2000/svg",
-        "rect"
+        "rect",
       );
       rect.setAttribute("x", "0");
       rect.setAttribute("y", y.toString());
@@ -750,7 +753,7 @@ export class TimelineRenderer {
       // Row number text
       const text = document.createElementNS(
         "http://www.w3.org/2000/svg",
-        "text"
+        "text",
       );
       text.setAttribute("x", "15");
       text.setAttribute("y", (y + periodHeight / 2 + 4).toString());
@@ -810,7 +813,7 @@ export class TimelineRenderer {
       // Tick mark
       const tick = document.createElementNS(
         "http://www.w3.org/2000/svg",
-        "line"
+        "line",
       );
       tick.setAttribute("x1", pixelPosition.toString());
       tick.setAttribute("y1", "40");
@@ -824,7 +827,7 @@ export class TimelineRenderer {
       if (time >= BIG_BANG_TIME) {
         const text = document.createElementNS(
           "http://www.w3.org/2000/svg",
-          "text"
+          "text",
         );
         text.setAttribute("x", pixelPosition.toString());
         text.setAttribute("y", "25");
@@ -870,7 +873,7 @@ export class TimelineRenderer {
     // Create noise pattern using SVG filter
     const filter = document.createElementNS(
       "http://www.w3.org/2000/svg",
-      "filter"
+      "filter",
     );
     filter.setAttribute("id", "noise-filter");
     filter.setAttribute("x", "0");
@@ -880,7 +883,7 @@ export class TimelineRenderer {
 
     const turbulence = document.createElementNS(
       "http://www.w3.org/2000/svg",
-      "feTurbulence"
+      "feTurbulence",
     );
     turbulence.setAttribute("type", "fractalNoise");
     turbulence.setAttribute("baseFrequency", "2.5");
@@ -889,13 +892,13 @@ export class TimelineRenderer {
 
     const colorMatrix = document.createElementNS(
       "http://www.w3.org/2000/svg",
-      "feColorMatrix"
+      "feColorMatrix",
     );
     colorMatrix.setAttribute("in", "noise");
     colorMatrix.setAttribute("type", "matrix");
     colorMatrix.setAttribute(
       "values",
-      "0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 1 0"
+      "0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 1 0",
     );
 
     filter.appendChild(turbulence);
@@ -906,7 +909,7 @@ export class TimelineRenderer {
     if (bigBangX > 0) {
       const noiseRect = document.createElementNS(
         "http://www.w3.org/2000/svg",
-        "rect"
+        "rect",
       );
       noiseRect.setAttribute("x", "0");
       noiseRect.setAttribute("y", "40");
@@ -920,7 +923,7 @@ export class TimelineRenderer {
       // Draw vertical line at Big Bang (dashed and thicker)
       const bigBangLine = document.createElementNS(
         "http://www.w3.org/2000/svg",
-        "line"
+        "line",
       );
       bigBangLine.setAttribute("x1", bigBangX.toString());
       bigBangLine.setAttribute("y1", "40");
@@ -934,7 +937,7 @@ export class TimelineRenderer {
       // Add label for Big Bang
       const label = document.createElementNS(
         "http://www.w3.org/2000/svg",
-        "text"
+        "text",
       );
       label.setAttribute("x", (bigBangX - 5).toString());
       label.setAttribute("y", "55");
@@ -1057,7 +1060,7 @@ export class TimelineRenderer {
     if (width > 40) {
       const text = document.createElementNS(
         "http://www.w3.org/2000/svg",
-        "text"
+        "text",
       );
       text.setAttribute("x", (startX + width / 2).toString());
       text.setAttribute("y", (y + height / 2 + 4).toString());
@@ -1090,7 +1093,7 @@ export class TimelineRenderer {
     // Event marker (hollow circle, smaller)
     const circle = document.createElementNS(
       "http://www.w3.org/2000/svg",
-      "circle"
+      "circle",
     );
     circle.setAttribute("id", event.id);
     circle.setAttribute("cx", x.toString());
@@ -1135,10 +1138,10 @@ export class TimelineRenderer {
     if (!this.svg || !this.data) return;
 
     const fromAssignment = this.laneAssignments.find(
-      (a) => a.itemId === connector.fromId
+      (a) => a.itemId === connector.fromId,
     );
     const toAssignment = this.laneAssignments.find(
-      (a) => a.itemId === connector.toId
+      (a) => a.itemId === connector.toId,
     );
 
     if (!fromAssignment || !toAssignment) return;
@@ -1171,7 +1174,7 @@ export class TimelineRenderer {
     // This prevents connectors from going backward in time
     const connectionTime = Math.min(
       fromAssignment.endTime,
-      toAssignment.startTime
+      toAssignment.startTime,
     );
     const fromX = this.timeToX(connectionTime);
     const toX = this.timeToX(toAssignment.startTime);
@@ -1186,7 +1189,7 @@ export class TimelineRenderer {
     const renderer = CONNECTOR_RENDERERS[this.options.connectorRenderer];
     if (!renderer) {
       console.warn(
-        `Connector renderer not found: ${this.options.connectorRenderer}`
+        `Connector renderer not found: ${this.options.connectorRenderer}`,
       );
       return;
     }
