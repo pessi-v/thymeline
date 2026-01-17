@@ -1042,7 +1042,8 @@ export class TimelineRenderer {
     rect.setAttribute("fill-opacity", "1");
     rect.setAttribute("stroke", "#000");
     rect.setAttribute("stroke-width", "1");
-    rect.setAttribute("rx", (height / 2).toString()); // Fully rounded ends
+    rect.setAttribute("rx", (5).toString());
+    rect.setAttribute("ry", (height * 0.35).toString());
 
     // Add click handler for info popup
     rect.style.cursor = "pointer";
