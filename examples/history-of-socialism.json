@@ -34,6 +34,7 @@
       "id": "event-iww-founding",
       "name": "IWW Founded",
       "time": "1905-06-27",
+      "relates_to": "period-iww",
       "info": "The Industrial Workers of the World is founded in Chicago by radical unionists including Eugene V. Debs, Mother Jones, and Big Bill Haywood. The 'Wobblies' advocate for 'One Big Union' organizing all workers regardless of skill, race, or gender."
     },
     {
@@ -52,6 +53,7 @@
       "id": "event-october-revolution",
       "name": "October Revolution",
       "time": "1917-11-07",
+      "relates_to": "period-ussr",
       "info": "The Bolsheviks, led by Vladimir Lenin and Leon Trotsky, overthrow the Provisional Government in the name of 'All Power to the Soviets'. The world's first socialist state is proclaimed, sending shockwaves through the global order."
     },
     {
@@ -64,6 +66,7 @@
       "id": "event-kronstadt",
       "name": "Kronstadt Rebellion",
       "time": "1921-03-01",
+      "relates_to": "period-ussr",
       "info": "Sailors at the Kronstadt naval base, former Bolshevik supporters, rebel demanding 'Soviets without Bolsheviks', free elections, and an end to War Communism. The rebellion's suppression marks a turning point, criticized by anarchists and left communists."
     },
     {
@@ -76,18 +79,21 @@
       "id": "event-spanish-revolution",
       "name": "Spanish Revolution",
       "time": "1936-07-19",
+      "relates_to": "period-cnt-fai",
       "info": "Workers and peasants respond to Franco's fascist coup by launching a social revolution. In Catalonia and Aragon, anarchist collectives manage factories and farms. George Orwell documents the experience in 'Homage to Catalonia'."
     },
     {
       "id": "event-tito-stalin-split",
       "name": "Tito-Stalin Split",
       "time": "1948-06-28",
+      "relates_to": "period-yugoslavia",
       "info": "Yugoslavia is expelled from the Cominform after Josip Broz Tito refuses to subordinate Yugoslav interests to Soviet control. The split leads to the development of 'workers' self-management' as an alternative socialist model."
     },
     {
       "id": "event-cuban-revolution",
       "name": "Cuban Revolution Triumphs",
       "time": "1959-01-01",
+      "relates_to": "period-cuba",
       "info": "Fidel Castro's 26th of July Movement overthrows the Batista dictatorship. The revolution, initially nationalist, soon declares itself socialist. Che Guevara becomes a global icon of revolutionary commitment."
     },
     {
@@ -106,18 +112,21 @@
       "id": "event-allende-elected",
       "name": "Allende Elected in Chile",
       "time": "1970-09-04",
+      "relates_to": "period-allende",
       "info": "Salvador Allende becomes the world's first democratically elected Marxist head of state. His Popular Unity government nationalizes copper mines and banks while preserving democratic institutions."
     },
     {
       "id": "event-allende-coup",
       "name": "Chilean Coup",
       "time": "1973-09-11",
+      "relates_to": "period-allende",
       "info": "General Augusto Pinochet, backed by the CIA, overthrows Salvador Allende in a violent coup. Allende dies in the presidential palace. The coup inaugurates brutal repression and neoliberal economic 'shock therapy'."
     },
     {
       "id": "event-sandinista-revolution",
       "name": "Sandinista Revolution",
       "time": "1979-07-19",
+      "relates_to": "period-sandinistas",
       "info": "The Sandinista National Liberation Front overthrows the Somoza dictatorship in Nicaragua after years of guerrilla struggle. The revolution implements literacy campaigns and land reform while facing US-backed Contra war."
     },
     {
@@ -130,24 +139,28 @@
       "id": "event-berlin-wall-fall",
       "name": "Fall of the Berlin Wall",
       "time": "1989-11-09",
+      "relates_to": "period-ddr",
       "info": "East Germans breach the Berlin Wall after weeks of mass protests, symbolizing the collapse of Soviet-style socialism in Eastern Europe. The event triggers rapid German reunification and the end of the Cold War."
     },
     {
       "id": "event-ussr-dissolution",
       "name": "USSR Dissolved",
       "time": "1991-12-26",
+      "relates_to": "period-ussr",
       "info": "The Soviet Union officially dissolves after the failed August coup and declarations of independence by constituent republics. The world's first socialist state ends after 74 years, leaving contested legacies across the political spectrum."
     },
     {
       "id": "event-zapatista-uprising",
       "name": "Zapatista Uprising",
       "time": "1994-01-01",
+      "relates_to": "period-ezln",
       "info": "The Zapatista Army of National Liberation (EZLN) launches an uprising in Chiapas, Mexico, on the day NAFTA takes effect. Led by Subcomandante Marcos, the movement combines indigenous rights with anti-capitalist politics and innovative use of media."
     },
     {
       "id": "event-chavez-elected",
       "name": "Hugo Chávez Elected",
       "time": "1998-12-06",
+      "relates_to": "period-bolivarian",
       "info": "Hugo Chávez wins Venezuela's presidency, launching the 'Bolivarian Revolution' and inspiring a 'pink tide' of left-wing governments across Latin America. His '21st century socialism' emphasizes participatory democracy and regional integration."
     }
   ],

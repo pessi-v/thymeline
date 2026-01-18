@@ -1,6 +1,7 @@
 /**
  * Event layout algorithm
- * Events are laid out in a separate section from periods
+ * Events can be laid out in a separate section from periods,
+ * or positioned below a specific period if they have a relates_to reference
  */
 
 import type { TimelineEvent, LaneAssignment, NormalizedTime } from '../../core/types';
@@ -17,17 +18,50 @@ function overlaps(
 }
 
 /**
- * Assign events to lanes (limited to 3 lanes)
- * Events are treated as point-in-time items
+ * Assign events to lanes
+ * - Events with relates_to are assigned to the same lane as their related period
+ * - Events without relates_to are assigned to lanes after all periods (limited to 3 lanes)
  */
 export function assignEventLanes(
   events: TimelineEvent[],
-  laneOffset: number = 0
+  laneOffset: number = 0,
+  periodAssignments: LaneAssignment[] = []
 ): LaneAssignment[] {
   const assignments: LaneAssignment[] = [];
 
-  // Normalize events to point-in-time items
-  const eventItems = events.map((event) => {
+  // Build a map of period id to lane assignment for quick lookup
+  const periodLaneMap = new Map<string, number>();
+  for (const assignment of periodAssignments) {
+    periodLaneMap.set(assignment.itemId, assignment.lane);
+  }
+
+  // Separate events into related (have relates_to) and unrelated
+  const relatedEvents: TimelineEvent[] = [];
+  const unrelatedEvents: TimelineEvent[] = [];
+
+  for (const event of events) {
+    if (event.relates_to && periodLaneMap.has(event.relates_to)) {
+      relatedEvents.push(event);
+    } else {
+      unrelatedEvents.push(event);
+    }
+  }
+
+  // Assign related events to the same lane as their related period
+  for (const event of relatedEvents) {
+    const periodLane = periodLaneMap.get(event.relates_to!)!;
+    const time = normalizeTime(event.time);
+    assignments.push({
+      itemId: event.id,
+      lane: periodLane,
+      startTime: time,
+      endTime: time,
+      type: 'event',
+    });
+  }
+
+  // Assign unrelated events using the original algorithm
+  const eventItems = unrelatedEvents.map((event) => {
     const time = normalizeTime(event.time);
     return {
       id: event.id,

@@ -19,6 +19,7 @@ export interface TimelineEvent {
   id: string;
   name: string;
   time: TimeInput;
+  relates_to?: string; // Optional reference to a period id - event will render below that period
   info?: string;
   metadata?: Record<string, any>;
 }

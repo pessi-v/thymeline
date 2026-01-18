@@ -637,9 +637,6 @@ export class TimelineRenderer {
     const periodLanes = [...new Set(periodAssignments.map((a) => a.lane))].sort(
       (a, b) => a - b,
     );
-    const eventLanes = [...new Set(eventAssignments.map((a) => a.lane))].sort(
-      (a, b) => a - b,
-    );
 
     // Map period lanes to sequential rows
     periodAssignments.forEach((assignment) => {
@@ -647,10 +644,28 @@ export class TimelineRenderer {
       rowMap.set(assignment.itemId, row);
     });
 
-    // Map event lanes to sequential rows (starting after periods)
+    // Separate related events (whose lane matches a period lane) from unrelated events
+    const periodLaneSet = new Set(periodLanes);
+    const relatedEventAssignments = eventAssignments.filter((a) =>
+      periodLaneSet.has(a.lane),
+    );
+    const unrelatedEventAssignments = eventAssignments.filter(
+      (a) => !periodLaneSet.has(a.lane),
+    );
+
+    // Map related events to the same row as their corresponding period lane
+    relatedEventAssignments.forEach((assignment) => {
+      const row = periodLanes.indexOf(assignment.lane);
+      rowMap.set(assignment.itemId, row);
+    });
+
+    // Map unrelated events to sequential rows (starting after periods)
     const periodRowCount = periodLanes.length;
-    eventAssignments.forEach((assignment) => {
-      const eventRow = eventLanes.indexOf(assignment.lane);
+    const unrelatedEventLanes = [
+      ...new Set(unrelatedEventAssignments.map((a) => a.lane)),
+    ].sort((a, b) => a - b);
+    unrelatedEventAssignments.forEach((assignment) => {
+      const eventRow = unrelatedEventLanes.indexOf(assignment.lane);
       const row = periodRowCount + eventRow;
       rowMap.set(assignment.itemId, row);
     });
@@ -1239,8 +1254,18 @@ export class TimelineRenderer {
     if (row === undefined) return;
 
     const x = this.timeToX(assignment.startTime);
-    const y = this.rowToY(row, "event");
     const height = 20; // Event row height
+
+    // Check if this event relates to a period
+    let y: number;
+    if (event.relates_to) {
+      // Position below the related period
+      const periodHeight = this.options.constraints.periodHeight;
+      const periodY = this.rowToY(row, "period");
+      y = periodY + periodHeight + 8; // 8px gap below period
+    } else {
+      y = this.rowToY(row, "event");
+    }
 
     // Event marker (hollow circle, smaller)
     const circle = document.createElementNS(
