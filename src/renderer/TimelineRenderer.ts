@@ -25,6 +25,26 @@ import { BIG_BANG_TIME } from "../utils/validation";
 import { CONNECTOR_RENDERERS, DEFAULT_CONNECTOR } from "./connectors";
 import { InfoPopup } from "./InfoPopup";
 
+/**
+ * Bounds for an event's circle and potential label positions
+ */
+interface EventBounds {
+  id: string;
+  circleX: number;
+  circleY: number;
+  circleRadius: number;
+  labelY: number;
+  labelHeight: number;
+  labelWidth: number;
+  rightLabelX: number; // Left edge of right-side label
+  leftLabelX: number; // Left edge of left-side label
+}
+
+/**
+ * Label position result after overlap detection
+ */
+type LabelPosition = "right" | "left" | "hidden";
+
 export class TimelineRenderer {
   private container: HTMLElement;
   private svg: SVGSVGElement | null = null;
@@ -726,10 +746,8 @@ export class TimelineRenderer {
       this.renderPeriod(period);
     }
 
-    // Render events
-    for (const event of this.data.events) {
-      this.renderEvent(event);
-    }
+    // Render events with smart label positioning
+    this.renderEventsWithLabelPositioning(this.data.events);
   }
 
   /**
@@ -1242,9 +1260,161 @@ export class TimelineRenderer {
   }
 
   /**
+   * Render all events with smart label positioning to avoid overlaps
+   */
+  private renderEventsWithLabelPositioning(events: TimelineEvent[]): void {
+    if (!this.svg) return;
+
+    const eventHeight = 20;
+    const circleRadius = 4;
+    const labelGap = 8; // Gap between circle and label
+    const fontSize = 10;
+    const charWidth = 6; // Approximate width per character at font-size 10
+    const labelHeight = fontSize + 4; // Approximate label height
+
+    // First pass: calculate bounds for all events
+    const allBounds: EventBounds[] = [];
+
+    for (const event of events) {
+      const assignment = this.laneAssignments.find(
+        (a) => a.itemId === event.id,
+      );
+      if (!assignment) continue;
+
+      const row = this.rowMapping.get(event.id);
+      if (row === undefined) continue;
+
+      const x = this.timeToX(assignment.startTime);
+      let y: number;
+      if (event.relates_to) {
+        const periodHeight = this.options.constraints.periodHeight;
+        const periodY = this.rowToY(row, "period");
+        y = periodY + periodHeight + 8;
+      } else {
+        y = this.rowToY(row, "event");
+      }
+
+      const circleY = y + eventHeight / 2;
+      const labelWidth = event.name.length * charWidth;
+
+      allBounds.push({
+        id: event.id,
+        circleX: x,
+        circleY,
+        circleRadius,
+        labelY: circleY - labelHeight / 2,
+        labelHeight,
+        labelWidth,
+        rightLabelX: x + labelGap,
+        leftLabelX: x - labelGap - labelWidth,
+      });
+    }
+
+    // Second pass: determine label positions
+    const labelPositions = new Map<string, LabelPosition>();
+
+    for (const bounds of allBounds) {
+      // Check if right-side label overlaps with any other event or label
+      const rightOverlaps = this.checkLabelOverlap(
+        bounds,
+        "right",
+        allBounds,
+        labelPositions,
+      );
+
+      if (!rightOverlaps) {
+        labelPositions.set(bounds.id, "right");
+        continue;
+      }
+
+      // Try left-side label
+      const leftOverlaps = this.checkLabelOverlap(
+        bounds,
+        "left",
+        allBounds,
+        labelPositions,
+      );
+
+      if (!leftOverlaps) {
+        labelPositions.set(bounds.id, "left");
+      } else {
+        labelPositions.set(bounds.id, "hidden");
+      }
+    }
+
+    // Third pass: render events with determined label positions
+    for (const event of events) {
+      const labelPosition = labelPositions.get(event.id) ?? "right";
+      this.renderEvent(event, labelPosition);
+    }
+  }
+
+  /**
+   * Check if a label at the given position would overlap with other events or their labels
+   */
+  private checkLabelOverlap(
+    bounds: EventBounds,
+    position: "right" | "left",
+    allBounds: EventBounds[],
+    labelPositions: Map<string, LabelPosition>,
+  ): boolean {
+    const labelX =
+      position === "right" ? bounds.rightLabelX : bounds.leftLabelX;
+    const labelRight = labelX + bounds.labelWidth;
+    const labelTop = bounds.labelY;
+    const labelBottom = bounds.labelY + bounds.labelHeight;
+
+    for (const other of allBounds) {
+      if (other.id === bounds.id) continue;
+
+      // Check overlap with other event's circle
+      // Circle bounds (as a box)
+      const circleLeft = other.circleX - other.circleRadius;
+      const circleRight = other.circleX + other.circleRadius;
+      const circleTop = other.circleY - other.circleRadius;
+      const circleBottom = other.circleY + other.circleRadius;
+
+      if (
+        labelX < circleRight &&
+        labelRight > circleLeft &&
+        labelTop < circleBottom &&
+        labelBottom > circleTop
+      ) {
+        return true; // Overlaps with circle
+      }
+
+      // Check overlap with other event's label (if it has been positioned)
+      const otherLabelPosition = labelPositions.get(other.id);
+      if (otherLabelPosition && otherLabelPosition !== "hidden") {
+        const otherLabelX =
+          otherLabelPosition === "right"
+            ? other.rightLabelX
+            : other.leftLabelX;
+        const otherLabelRight = otherLabelX + other.labelWidth;
+        const otherLabelTop = other.labelY;
+        const otherLabelBottom = other.labelY + other.labelHeight;
+
+        if (
+          labelX < otherLabelRight &&
+          labelRight > otherLabelX &&
+          labelTop < otherLabelBottom &&
+          labelBottom > otherLabelTop
+        ) {
+          return true; // Overlaps with other label
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
    * Render an event as a marker
    */
-  private renderEvent(event: TimelineEvent): void {
+  private renderEvent(
+    event: TimelineEvent,
+    labelPosition: LabelPosition = "right",
+  ): void {
     if (!this.svg) return;
 
     const assignment = this.laneAssignments.find((a) => a.itemId === event.id);
@@ -1297,15 +1467,28 @@ export class TimelineRenderer {
 
     this.svg.appendChild(circle);
 
-    // Label
-    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    text.setAttribute("x", (x + 8).toString());
-    text.setAttribute("y", (y + height / 2 + 4).toString());
-    text.setAttribute("font-size", "10");
-    text.setAttribute("fill", "#333");
-    text.setAttribute("pointer-events", "none");
-    text.textContent = event.name;
-    this.svg.appendChild(text);
+    // Label (only if not hidden)
+    if (labelPosition !== "hidden") {
+      const text = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "text",
+      );
+
+      if (labelPosition === "right") {
+        text.setAttribute("x", (x + 8).toString());
+        text.setAttribute("text-anchor", "start");
+      } else {
+        text.setAttribute("x", (x - 8).toString());
+        text.setAttribute("text-anchor", "end");
+      }
+
+      text.setAttribute("y", (y + height / 2 + 4).toString());
+      text.setAttribute("font-size", "10");
+      text.setAttribute("fill", "#333");
+      text.setAttribute("pointer-events", "none");
+      text.textContent = event.name;
+      this.svg.appendChild(text);
+    }
   }
 
   /**
