@@ -112,6 +112,7 @@ export interface LaneAssignment {
   startTime: NormalizedTime;
   endTime: NormalizedTime;
   type?: 'period' | 'event';
+  subLane?: number; // For events: sub-lane within the period's vertical space (0, 1, or 2)
 }
 
 /**

@@ -1,7 +1,8 @@
 /**
  * Event layout algorithm
  * Events can be laid out in a separate section from periods,
- * or positioned below a specific period if they have a relates_to reference
+ * or positioned below a specific period if they have a relates_to reference.
+ * Events use a 3-sub-lane structure within their vertical space.
  */
 
 import type { TimelineEvent, LaneAssignment, NormalizedTime } from '../../core/types';
@@ -18,9 +19,40 @@ function overlaps(
 }
 
 /**
- * Assign events to lanes
- * - Events with relates_to are assigned to the same lane as their related period
- * - Events without relates_to are assigned to lanes after all periods (limited to 3 lanes)
+ * Assign a sub-lane (0, 1, or 2) to an event within a period's vertical space.
+ * Prefers sub-lane 1 (middle), then tries 0 and 2 to avoid overlaps.
+ */
+function assignSubLane(
+  time: NormalizedTime,
+  subLaneEndTimes: Array<NormalizedTime>
+): number {
+  // Try sub-lanes in order of preference: 1 (middle), 0 (top), 2 (bottom)
+  const preferenceOrder = [1, 0, 2];
+
+  for (const subLane of preferenceOrder) {
+    if (!overlaps(time, subLaneEndTimes[subLane]!)) {
+      return subLane;
+    }
+  }
+
+  // All sub-lanes have overlaps, find the one with earliest end time
+  let bestSubLane = 1;
+  let earliestTime = subLaneEndTimes[1]!;
+  for (let i = 0; i < 3; i++) {
+    if (subLaneEndTimes[i]! < earliestTime) {
+      bestSubLane = i;
+      earliestTime = subLaneEndTimes[i]!;
+    }
+  }
+  return bestSubLane;
+}
+
+/**
+ * Assign events to lanes and sub-lanes
+ * - Events with relates_to are assigned to the same lane as their related period,
+ *   with sub-lanes (0, 1, 2) to avoid overlaps within that period's space
+ * - Events without relates_to are assigned to lanes after all periods (limited to 3 lanes),
+ *   with sub-lane corresponding to their lane position
  */
 export function assignEventLanes(
   events: TimelineEvent[],
@@ -47,17 +79,39 @@ export function assignEventLanes(
     }
   }
 
-  // Assign related events to the same lane as their related period
+  // Group related events by their period lane
+  const eventsByPeriodLane = new Map<number, Array<{ event: TimelineEvent; time: NormalizedTime }>>();
   for (const event of relatedEvents) {
     const periodLane = periodLaneMap.get(event.relates_to!)!;
     const time = normalizeTime(event.time);
-    assignments.push({
-      itemId: event.id,
-      lane: periodLane,
-      startTime: time,
-      endTime: time,
-      type: 'event',
-    });
+
+    if (!eventsByPeriodLane.has(periodLane)) {
+      eventsByPeriodLane.set(periodLane, []);
+    }
+    eventsByPeriodLane.get(periodLane)!.push({ event, time });
+  }
+
+  // Assign sub-lanes to related events within each period lane
+  for (const [periodLane, eventsInLane] of eventsByPeriodLane) {
+    // Sort events by time
+    eventsInLane.sort((a, b) => a.time - b.time);
+
+    // Track end times for each sub-lane (0, 1, 2)
+    const subLaneEndTimes: NormalizedTime[] = [-Infinity, -Infinity, -Infinity];
+
+    for (const { event, time } of eventsInLane) {
+      const subLane = assignSubLane(time, subLaneEndTimes);
+      subLaneEndTimes[subLane] = time;
+
+      assignments.push({
+        itemId: event.id,
+        lane: periodLane,
+        startTime: time,
+        endTime: time,
+        type: 'event',
+        subLane,
+      });
+    }
   }
 
   // Assign unrelated events using the original algorithm
@@ -110,6 +164,7 @@ export function assignEventLanes(
       startTime: item.time,
       endTime: item.time,
       type: 'event',
+      subLane: assignedLane, // For unrelated events, sub-lane matches their lane index (0, 1, or 2)
     });
   }
 

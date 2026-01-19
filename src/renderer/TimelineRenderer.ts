@@ -366,14 +366,22 @@ export class TimelineRenderer {
     this.svg.setAttribute("width", this.options.width.toString());
 
     // Calculate height based on actual number of rows used
+    // Account for sub-lanes: 1 above top period, 2 below bottom period
     const numRows =
       this.rowMapping.size > 0 ? Math.max(...this.rowMapping.values()) + 1 : 1;
     const periodHeight = this.options.constraints.periodHeight;
     const rowGap = this.options.constraints.laneGap;
     const timeAxisOffset = 60;
+    const subLaneHeight = rowGap / 3; // Each sub-lane takes 1/3 of the gap
+    const topSubLaneSpace = subLaneHeight; // 1 sub-lane above first period
+    const bottomSubLaneSpace = subLaneHeight * 2; // 2 sub-lanes below last period
     const bottomPadding = 20;
     const calculatedHeight =
-      timeAxisOffset + numRows * (periodHeight + rowGap) + bottomPadding;
+      timeAxisOffset +
+      topSubLaneSpace +
+      numRows * (periodHeight + rowGap) +
+      bottomSubLaneSpace +
+      bottomPadding;
     const height = Math.max(this.options.height, calculatedHeight);
 
     this.svg.setAttribute("height", height.toString());
@@ -696,17 +704,47 @@ export class TimelineRenderer {
   /**
    * Get Y position for a row
    * Simple row-based positioning with configurable gaps
+   * Accounts for 1 sub-lane of space above the first period row
    */
   private rowToY(row: number, type?: "period" | "event"): number {
     const periodHeight = this.options.constraints.periodHeight;
     const eventHeight = 20;
     const rowGap = this.options.constraints.laneGap;
     const timeAxisOffset = 60;
+    const subLaneHeight = rowGap / 3;
+    const topSubLaneSpace = subLaneHeight; // 1 sub-lane above first period
 
     if (type === "period") {
-      return timeAxisOffset + row * (periodHeight + rowGap);
+      return timeAxisOffset + topSubLaneSpace + row * (periodHeight + rowGap);
     } else {
-      return timeAxisOffset + row * (eventHeight + rowGap);
+      return timeAxisOffset + topSubLaneSpace + row * (eventHeight + rowGap);
+    }
+  }
+
+  /**
+   * Get Y position for an event with sub-lane support
+   * @param row The row number (same as period row for related events)
+   * @param subLane The sub-lane (0, 1, or 2) within the row's vertical space
+   * @param isRelatedEvent Whether this event relates to a period
+   */
+  private eventToY(row: number, subLane: number, isRelatedEvent: boolean): number {
+    const periodHeight = this.options.constraints.periodHeight;
+    const rowGap = this.options.constraints.laneGap;
+    const timeAxisOffset = 60;
+    const subLaneHeight = rowGap / 3;
+    const topSubLaneSpace = subLaneHeight; // 1 sub-lane above first period
+
+    if (isRelatedEvent) {
+      // Related events are positioned in sub-lanes below their period
+      const periodY = timeAxisOffset + topSubLaneSpace + row * (periodHeight + rowGap);
+      // Sub-lane 0 is just below period, sub-lane 1 is middle, sub-lane 2 is at bottom of gap
+      return periodY + periodHeight + subLane * subLaneHeight;
+    } else {
+      // Unrelated events use the event section (after all periods)
+      // Sub-lane is used to spread them vertically
+      const eventHeight = 20;
+      const baseY = timeAxisOffset + topSubLaneSpace + row * (eventHeight + rowGap);
+      return baseY + subLane * subLaneHeight;
     }
   }
 
@@ -1285,14 +1323,9 @@ export class TimelineRenderer {
       if (row === undefined) continue;
 
       const x = this.timeToX(assignment.startTime);
-      let y: number;
-      if (event.relates_to) {
-        const periodHeight = this.options.constraints.periodHeight;
-        const periodY = this.rowToY(row, "period");
-        y = periodY + periodHeight + 8;
-      } else {
-        y = this.rowToY(row, "event");
-      }
+      const subLane = assignment.subLane ?? 1; // Default to middle sub-lane
+      const isRelatedEvent = !!event.relates_to;
+      const y = this.eventToY(row, subLane, isRelatedEvent);
 
       const circleY = y + eventHeight / 2;
       const labelWidth = event.name.length * charWidth;
@@ -1426,16 +1459,10 @@ export class TimelineRenderer {
     const x = this.timeToX(assignment.startTime);
     const height = 20; // Event row height
 
-    // Check if this event relates to a period
-    let y: number;
-    if (event.relates_to) {
-      // Position below the related period
-      const periodHeight = this.options.constraints.periodHeight;
-      const periodY = this.rowToY(row, "period");
-      y = periodY + periodHeight + 8; // 8px gap below period
-    } else {
-      y = this.rowToY(row, "event");
-    }
+    // Calculate Y position using sub-lane
+    const subLane = assignment.subLane ?? 1; // Default to middle sub-lane
+    const isRelatedEvent = !!event.relates_to;
+    const y = this.eventToY(row, subLane, isRelatedEvent);
 
     // Event marker (hollow circle, smaller)
     const circle = document.createElementNS(

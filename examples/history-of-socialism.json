@@ -41,12 +41,14 @@
       "id": "event-1905-revolution",
       "name": "Russian Revolution of 1905",
       "time": "1905-01-22",
+      "relates_to": "period-ussr",
       "info": "Bloody Sunday massacre triggers a revolutionary wave across the Russian Empire. Workers form the first soviets (councils), demonstrating new forms of democratic organization. Though defeated, the revolution serves as a 'dress rehearsal' for 1917."
     },
     {
       "id": "event-february-revolution",
       "name": "February Revolution",
       "time": "1917-03-08",
+      "relates_to": "period-ussr",
       "info": "Women workers in Petrograd strike on International Women's Day, sparking a revolution that topples the Romanov dynasty. Dual power emerges between the Provisional Government and the soviets of workers, soldiers, and peasants."
     },
     {
@@ -293,28 +295,36 @@
       "fromId": "period-utopian-socialism",
       "toId": "period-first-international",
       "type": "defined",
-      "metadata": { "note": "Scientific socialism emerges from critique of utopian socialism" }
+      "metadata": {
+        "note": "Scientific socialism emerges from critique of utopian socialism"
+      }
     },
     {
       "id": "conn-first-second",
       "fromId": "period-first-international",
       "toId": "period-second-international",
       "type": "undefined",
-      "metadata": { "note": "Internationals as successive attempts at workers' coordination" }
+      "metadata": {
+        "note": "Internationals as successive attempts at workers' coordination"
+      }
     },
     {
       "id": "conn-second-third",
       "fromId": "period-second-international",
       "toId": "period-third-international",
       "type": "undefined",
-      "metadata": { "note": "Third International founded in opposition to Second's 'social patriotism'" }
+      "metadata": {
+        "note": "Third International founded in opposition to Second's 'social patriotism'"
+      }
     },
     {
       "id": "conn-third-fourth",
       "fromId": "period-third-international",
       "toId": "period-fourth-international",
       "type": "undefined",
-      "metadata": { "note": "Fourth International founded in opposition to Stalinist Comintern" }
+      "metadata": {
+        "note": "Fourth International founded in opposition to Stalinist Comintern"
+      }
     },
     {
       "id": "conn-ussr-ddr",
@@ -328,7 +338,9 @@
       "fromId": "period-ussr",
       "toId": "period-yugoslavia",
       "type": "defined",
-      "metadata": { "note": "Yugoslav partisans supported by USSR, later independent" }
+      "metadata": {
+        "note": "Yugoslav partisans supported by USSR, later independent"
+      }
     },
     {
       "id": "conn-ccp-prc",
@@ -342,14 +354,18 @@
       "fromId": "period-first-international",
       "toId": "period-ussr",
       "type": "defined",
-      "metadata": { "note": "Marxist tradition from First International shapes Bolshevism" }
+      "metadata": {
+        "note": "Marxist tradition from First International shapes Bolshevism"
+      }
     },
     {
       "id": "conn-cnt-iww",
       "fromId": "period-iww",
       "toId": "period-cnt-fai",
       "type": "undefined",
-      "metadata": { "note": "Anarcho-syndicalist tradition connects IWW and CNT" }
+      "metadata": {
+        "note": "Anarcho-syndicalist tradition connects IWW and CNT"
+      }
     },
     {
       "id": "conn-cuba-sandinistas",
