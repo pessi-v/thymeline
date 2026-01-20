@@ -460,12 +460,23 @@ export class TimelineRenderer {
     // Add mouse wheel zoom support
     this.svg.addEventListener("wheel", (e) => {
       e.preventDefault();
-      const delta = e.deltaY;
-      if (delta < 0) {
-        this.zoomIn();
-      } else {
-        this.zoomOut();
-      }
+
+      // Get the cursor position relative to the SVG
+      const rect = this.svg!.getBoundingClientRect();
+      const cursorX = e.clientX - rect.left;
+
+      // Convert pixel position to time
+      const cursorTime = this.xToTime(cursorX);
+
+      // Calculate new zoom level
+      const zoomFactor = 1.5;
+      const newZoomLevel =
+        e.deltaY < 0
+          ? this.viewport.zoomLevel * zoomFactor
+          : this.viewport.zoomLevel / zoomFactor;
+
+      // Zoom centered on the cursor position
+      this.setZoomLevel(newZoomLevel, cursorTime);
     });
   }
 
