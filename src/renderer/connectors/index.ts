@@ -21,8 +21,8 @@ import { sigmoidHorizontalConnector } from "./sigmoidHorizontalConnector";
 export const CONNECTOR_RENDERERS: Record<string, ConnectorRenderer> =
   /* @__PURE__ */ (() => {
     const connectors: Record<string, ConnectorRenderer> = {
-      sigmoidHorizontalLimited: sigmoidHorizontalLimitedConnector,
       "connector-v4": connectorV4,
+      sigmoidHorizontalLimited: sigmoidHorizontalLimitedConnector,
     };
 
     // In production builds (__DEBUG__ = false), debug connectors are removed by tree-shaking
