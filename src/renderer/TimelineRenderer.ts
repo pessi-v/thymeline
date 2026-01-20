@@ -14,6 +14,7 @@ import type {
   ItemClickCallback,
   ItemHoverCallback,
   ViewportState,
+  LaneAssignment,
 } from "../core/types";
 import {
   normalizeTime,
@@ -38,6 +39,20 @@ interface EventBounds {
   labelWidth: number;
   rightLabelX: number; // Left edge of right-side label
   leftLabelX: number; // Left edge of left-side label
+  subLane: number; // Current sub-lane assignment
+  row: number; // Row number
+  isRelatedEvent: boolean; // Whether this event relates to a period
+  labelPosition?: LabelPosition; // Actual label position (set when placed)
+}
+
+/**
+ * Bounding box for connector collision detection
+ */
+interface ConnectorBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 /**
@@ -85,8 +100,7 @@ export class TimelineRenderer {
         minEventWidth: 2,
         maxEventWidth: 20,
         periodHeight: 28,
-        laneHeight: 80,
-        laneGap: 40,
+        laneGap: 39,
       },
       periodLayoutAlgorithm: options.periodLayoutAlgorithm ?? "succession",
       connectorRenderer: options.connectorRenderer ?? DEFAULT_CONNECTOR,
@@ -366,18 +380,20 @@ export class TimelineRenderer {
     this.svg.setAttribute("width", this.options.width.toString());
 
     // Calculate height based on actual number of rows used
-    // Account for sub-lanes: 1 above top period, 2 below bottom period
+    // Layout from top: unrelated events lane, sub-lane -1, periods with sub-lanes 0/1
     const numRows =
       this.rowMapping.size > 0 ? Math.max(...this.rowMapping.values()) + 1 : 1;
     const periodHeight = this.options.constraints.periodHeight;
     const rowGap = this.options.constraints.laneGap;
     const timeAxisOffset = 60;
     const subLaneHeight = rowGap / 3; // Each sub-lane takes 1/3 of the gap
-    const topSubLaneSpace = subLaneHeight; // 1 sub-lane above first period
+    const unrelatedEventsLaneHeight = subLaneHeight; // Lane for unrelated events at very top
+    const topSubLaneSpace = subLaneHeight; // 1 sub-lane above first period (for sub-lane -1)
     const bottomSubLaneSpace = subLaneHeight * 2; // 2 sub-lanes below last period
     const bottomPadding = 20;
     const calculatedHeight =
       timeAxisOffset +
+      unrelatedEventsLaneHeight +
       topSubLaneSpace +
       numRows * (periodHeight + rowGap) +
       bottomSubLaneSpace +
@@ -716,7 +732,7 @@ export class TimelineRenderer {
   /**
    * Get Y position for a row
    * Simple row-based positioning with configurable gaps
-   * Accounts for 1 sub-lane of space above the first period row
+   * Layout: unrelated events lane -> sub-lane -1 -> periods with sub-lanes 0/1
    */
   private rowToY(row: number, type?: "period" | "event"): number {
     const periodHeight = this.options.constraints.periodHeight;
@@ -724,19 +740,20 @@ export class TimelineRenderer {
     const rowGap = this.options.constraints.laneGap;
     const timeAxisOffset = 60;
     const subLaneHeight = rowGap / 3;
-    const topSubLaneSpace = subLaneHeight; // 1 sub-lane above first period
+    const unrelatedEventsLaneHeight = subLaneHeight; // Lane for unrelated events at very top
+    const topSubLaneSpace = subLaneHeight; // 1 sub-lane above first period (for sub-lane -1)
 
     if (type === "period") {
-      return timeAxisOffset + topSubLaneSpace + row * (periodHeight + rowGap);
+      return timeAxisOffset + unrelatedEventsLaneHeight + topSubLaneSpace + row * (periodHeight + rowGap);
     } else {
-      return timeAxisOffset + topSubLaneSpace + row * (eventHeight + rowGap);
+      return timeAxisOffset + unrelatedEventsLaneHeight + topSubLaneSpace + row * (eventHeight + rowGap);
     }
   }
 
   /**
    * Get Y position for an event with sub-lane support
    * @param row The row number (same as period row for related events)
-   * @param subLane The sub-lane (0, 1, or 2) within the row's vertical space
+   * @param subLane The sub-lane (-1, 0, or 1) within the row's vertical space
    * @param isRelatedEvent Whether this event relates to a period
    */
   private eventToY(
@@ -748,21 +765,24 @@ export class TimelineRenderer {
     const rowGap = this.options.constraints.laneGap;
     const timeAxisOffset = 60;
     const subLaneHeight = rowGap / 3;
-    const topSubLaneSpace = subLaneHeight; // 1 sub-lane above first period
+    const unrelatedEventsLaneHeight = subLaneHeight; // Lane for unrelated events at very top
+    const topSubLaneSpace = subLaneHeight; // 1 sub-lane above first period (for sub-lane -1)
 
     if (isRelatedEvent) {
-      // Related events are positioned in sub-lanes below their period
+      // Calculate period Y position
       const periodY =
-        timeAxisOffset + topSubLaneSpace + row * (periodHeight + rowGap);
-      // Sub-lane 0 is just below period, sub-lane 1 is middle, sub-lane 2 is at bottom of gap
-      return periodY + periodHeight + subLane * subLaneHeight;
+        timeAxisOffset + unrelatedEventsLaneHeight + topSubLaneSpace + row * (periodHeight + rowGap);
+
+      if (subLane === -1) {
+        // Position above the period (offset accounts for event height + clearance)
+        return periodY - subLaneHeight - 4;
+      } else {
+        // Sub-lane 0 is just below period, sub-lane 1 is further below
+        return periodY + periodHeight + subLane * subLaneHeight;
+      }
     } else {
-      // Unrelated events use the event section (after all periods)
-      // Sub-lane is used to spread them vertically
-      const eventHeight = 20;
-      const baseY =
-        timeAxisOffset + topSubLaneSpace + row * (eventHeight + rowGap);
-      return baseY + subLane * subLaneHeight;
+      // Unrelated events go in the very top lane (above all periods)
+      return timeAxisOffset;
     }
   }
 
@@ -1322,7 +1342,159 @@ export class TimelineRenderer {
   }
 
   /**
+   * Calculate bounding boxes for all visible connectors for collision detection
+   * Samples the connector paths at intervals and creates boxes around segments
+   */
+  private calculateConnectorBounds(): ConnectorBox[] {
+    if (!this.data) return [];
+
+    const boxes: ConnectorBox[] = [];
+    const strokeWidth = 5; // Connector stroke width
+
+    for (const connector of this.data.connectors) {
+      const fromAssignment = this.laneAssignments.find(
+        (a) => a.itemId === connector.fromId,
+      );
+      const toAssignment = this.laneAssignments.find(
+        (a) => a.itemId === connector.toId,
+      );
+
+      if (!fromAssignment || !toAssignment) continue;
+
+      // Calculate pixel widths to check visibility (same as renderConnector)
+      const fromStartX = this.timeToX(fromAssignment.startTime);
+      const fromEndX = this.timeToX(fromAssignment.endTime);
+      const fromWidth = fromEndX - fromStartX;
+      const toStartX = this.timeToX(toAssignment.startTime);
+      const toEndX = this.timeToX(toAssignment.endTime);
+      const toWidth = toEndX - toStartX;
+
+      // Skip if either period is too small (same logic as renderConnector)
+      if (fromWidth < 10 || toWidth < 10) continue;
+
+      const fromRow = this.rowMapping.get(connector.fromId);
+      const toRow = this.rowMapping.get(connector.toId);
+      if (fromRow === undefined || toRow === undefined) continue;
+
+      // Calculate connection points (matching connector renderer logic)
+      const connectionTime = Math.min(
+        fromAssignment.endTime,
+        toAssignment.startTime,
+      );
+      let fromX = this.timeToX(connectionTime) - 5; // Adjusted like in connector
+      const toX = this.timeToX(toAssignment.startTime) + 5;
+      let fromY =
+        this.rowToY(fromRow, fromAssignment.type) +
+        this.options.constraints.periodHeight / 2;
+      const toY =
+        this.rowToY(toRow, toAssignment.type) +
+        this.options.constraints.periodHeight / 2;
+
+      // Adjust Y position on 'from' side based on relative position
+      if (toY < fromY) {
+        fromY = fromY - 5;
+      } else if (toY > fromY) {
+        fromY = fromY + 5;
+      }
+
+      // Sample the connector path and create bounding boxes
+      const pathBoxes = this.sampleConnectorPath(
+        fromX,
+        fromY,
+        toX,
+        toY,
+        strokeWidth,
+      );
+      boxes.push(...pathBoxes);
+    }
+
+    return boxes;
+  }
+
+  /**
+   * Sample a connector path and create bounding boxes for collision detection
+   */
+  private sampleConnectorPath(
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+    strokeWidth: number,
+  ): ConnectorBox[] {
+    const boxes: ConnectorBox[] = [];
+    const horizontalDistance = Math.abs(toX - fromX);
+    const maxCurveDistance = 50;
+    const padding = strokeWidth / 2 + 2; // Add some padding for collision buffer
+
+    // Sigmoid function
+    const sigmoid = (t: number) => 1 / (1 + Math.exp(-2 * t));
+
+    // Generate sample points along the path
+    const samplePoints: { x: number; y: number }[] = [];
+    const limit = 3;
+    const numSamples = 20;
+
+    if (horizontalDistance <= maxCurveDistance) {
+      // Full sigmoid curve
+      for (let i = 0; i <= numSamples; i++) {
+        const t = -limit + (i / numSamples) * (2 * limit);
+        const normalizedT = (t + limit) / (2 * limit);
+        const sigmoidValue = sigmoid(t);
+        samplePoints.push({
+          x: fromX + normalizedT * (toX - fromX),
+          y: fromY + sigmoidValue * (toY - fromY),
+        });
+      }
+    } else {
+      // Sigmoid curve to maxCurveDistance, then straight line
+      const isGoingRight = toX > fromX;
+      const curveEndX = isGoingRight
+        ? fromX + maxCurveDistance
+        : fromX - maxCurveDistance;
+
+      // Sample the sigmoid portion
+      for (let i = 0; i <= numSamples; i++) {
+        const t = -limit + (i / numSamples) * (2 * limit);
+        const normalizedT = (t + limit) / (2 * limit);
+        const sigmoidValue = sigmoid(t);
+        samplePoints.push({
+          x: fromX + normalizedT * (curveEndX - fromX),
+          y: fromY + sigmoidValue * (toY - fromY),
+        });
+      }
+
+      // Add the end point of the straight line
+      samplePoints.push({ x: toX, y: toY });
+    }
+
+    // Create bounding boxes from consecutive sample points
+    for (let i = 0; i < samplePoints.length - 1; i++) {
+      const p1 = samplePoints[i]!;
+      const p2 = samplePoints[i + 1]!;
+
+      const minX = Math.min(p1.x, p2.x) - padding;
+      const maxX = Math.max(p1.x, p2.x) + padding;
+      const minY = Math.min(p1.y, p2.y) - padding;
+      const maxY = Math.max(p1.y, p2.y) + padding;
+
+      boxes.push({
+        x: minX,
+        y: minY,
+        width: maxX - minX,
+        height: maxY - minY,
+      });
+    }
+
+    return boxes;
+  }
+
+  /**
    * Render all events with smart label positioning to avoid overlaps
+   * Algorithm:
+   * 1. Try current sub-lane + right label
+   * 2. Try alternative sub-lanes (in preference order) with right then left label
+   * 3. Try current sub-lane + left label
+   * 4. Hide label (last resort)
    */
   private renderEventsWithLabelPositioning(events: TimelineEvent[]): void {
     if (!this.svg) return;
@@ -1334,8 +1506,16 @@ export class TimelineRenderer {
     const charWidth = 6; // Approximate width per character at font-size 10
     const labelHeight = fontSize + 4; // Approximate label height
 
-    // First pass: calculate bounds for all events
-    const allBounds: EventBounds[] = [];
+    // Calculate connector bounds for collision detection
+    const connectorBoxes = this.calculateConnectorBounds();
+
+    // Build a list of events with their assignments, sorted by time (left to right)
+    const eventData: Array<{
+      event: TimelineEvent;
+      assignment: LaneAssignment;
+      row: number;
+      isRelatedEvent: boolean;
+    }> = [];
 
     for (const event of events) {
       const assignment = this.laneAssignments.find(
@@ -1346,74 +1526,200 @@ export class TimelineRenderer {
       const row = this.rowMapping.get(event.id);
       if (row === undefined) continue;
 
-      const x = this.timeToX(assignment.startTime);
-      const subLane = assignment.subLane ?? 1; // Default to middle sub-lane
-      const isRelatedEvent = !!event.relates_to;
-      const y = this.eventToY(row, subLane, isRelatedEvent);
-
-      const circleY = y + eventHeight / 2;
-      const labelWidth = event.name.length * charWidth;
-
-      allBounds.push({
-        id: event.id,
-        circleX: x,
-        circleY,
-        circleRadius,
-        labelY: circleY - labelHeight / 2,
-        labelHeight,
-        labelWidth,
-        rightLabelX: x + labelGap,
-        leftLabelX: x - labelGap - labelWidth,
+      eventData.push({
+        event,
+        assignment,
+        row,
+        isRelatedEvent: !!event.relates_to,
       });
     }
 
-    // Second pass: determine label positions
-    const labelPositions = new Map<string, LabelPosition>();
+    // Sort by time (left to right)
+    eventData.sort((a, b) => a.assignment.startTime - b.assignment.startTime);
 
-    for (const bounds of allBounds) {
-      // Check if right-side label overlaps with any other event or label
-      const rightOverlaps = this.checkLabelOverlap(
-        bounds,
-        "right",
-        allBounds,
-        labelPositions,
-      );
+    // Track all placed event bounds (updated as we place events)
+    const placedBounds: EventBounds[] = [];
 
-      if (!rightOverlaps) {
-        labelPositions.set(bounds.id, "right");
-        continue;
-      }
+    // Track sub-lane end times per row for time overlap detection
+    const subLaneEndTimes = new Map<string, number>(); // "row:subLane" -> endTime
 
-      // Try left-side label
-      const leftOverlaps = this.checkLabelOverlap(
-        bounds,
-        "left",
-        allBounds,
-        labelPositions,
-      );
+    // Final positions for rendering
+    const finalPositions = new Map<
+      string,
+      { subLane: number; labelPosition: LabelPosition }
+    >();
 
-      if (!leftOverlaps) {
-        labelPositions.set(bounds.id, "left");
+    // Sub-lane preference order for related events
+    const subLanePreference = [0, 1, -1];
+
+    for (const { event, assignment, row, isRelatedEvent } of eventData) {
+      const x = this.timeToX(assignment.startTime);
+      const originalSubLane = assignment.subLane ?? 0;
+      const labelWidth = event.name.length * charWidth;
+
+      // Helper to calculate bounds for a given sub-lane
+      const calcBounds = (subLane: number): EventBounds => {
+        const y = this.eventToY(row, subLane, isRelatedEvent);
+        const circleY = y + eventHeight / 2;
+        return {
+          id: event.id,
+          circleX: x,
+          circleY,
+          circleRadius,
+          labelY: circleY - labelHeight / 2,
+          labelHeight,
+          labelWidth,
+          rightLabelX: x + labelGap,
+          leftLabelX: x - labelGap - labelWidth,
+          subLane,
+          row,
+          isRelatedEvent,
+        };
+      };
+
+      // Helper to check if a sub-lane has time overlap with existing events
+      const hasTimeOverlap = (subLane: number): boolean => {
+        const key = `${row}:${subLane}`;
+        const endTime = subLaneEndTimes.get(key);
+        return endTime !== undefined && assignment.startTime < endTime;
+      };
+
+      // Helper to try a position (sub-lane + label position)
+      const tryPosition = (
+        subLane: number,
+        labelPos: "right" | "left",
+      ): boolean => {
+        // Skip if this sub-lane has time overlap
+        if (hasTimeOverlap(subLane)) {
+          return false;
+        }
+
+        const bounds = calcBounds(subLane);
+        const overlaps = this.checkLabelOverlap(
+          bounds,
+          labelPos,
+          placedBounds,
+          connectorBoxes,
+        );
+        return !overlaps;
+      };
+
+      let chosenSubLane = originalSubLane;
+      let chosenLabelPosition: LabelPosition = "right";
+      let foundPosition = false;
+
+      if (isRelatedEvent) {
+        // Step 1: Try original sub-lane + right label
+        if (tryPosition(originalSubLane, "right")) {
+          chosenSubLane = originalSubLane;
+          chosenLabelPosition = "right";
+          foundPosition = true;
+        }
+
+        // Step 2: Try alternative sub-lanes (in preference order)
+        if (!foundPosition) {
+          for (const subLane of subLanePreference) {
+            if (subLane === originalSubLane) continue; // Already tried
+
+            // Try right label first
+            if (tryPosition(subLane, "right")) {
+              chosenSubLane = subLane;
+              chosenLabelPosition = "right";
+              foundPosition = true;
+              break;
+            }
+
+            // Try left label
+            if (tryPosition(subLane, "left")) {
+              chosenSubLane = subLane;
+              chosenLabelPosition = "left";
+              foundPosition = true;
+              break;
+            }
+          }
+        }
+
+        // Step 3: Try original sub-lane + left label
+        if (!foundPosition && tryPosition(originalSubLane, "left")) {
+          chosenSubLane = originalSubLane;
+          chosenLabelPosition = "left";
+          foundPosition = true;
+        }
+
+        // Step 4: Fall back to hiding label
+        if (!foundPosition) {
+          chosenSubLane = originalSubLane;
+          chosenLabelPosition = "hidden";
+        }
       } else {
-        labelPositions.set(bounds.id, "hidden");
+        // Unrelated events: use simpler logic (no sub-lane switching)
+        const bounds = calcBounds(originalSubLane);
+        const rightOverlaps = this.checkLabelOverlap(
+          bounds,
+          "right",
+          placedBounds,
+          connectorBoxes,
+        );
+
+        if (!rightOverlaps) {
+          chosenLabelPosition = "right";
+        } else {
+          const leftOverlaps = this.checkLabelOverlap(
+            bounds,
+            "left",
+            placedBounds,
+            connectorBoxes,
+          );
+          chosenLabelPosition = leftOverlaps ? "hidden" : "left";
+        }
+        chosenSubLane = originalSubLane;
       }
+
+      // Record the final position
+      finalPositions.set(event.id, {
+        subLane: chosenSubLane,
+        labelPosition: chosenLabelPosition,
+      });
+
+      // Add to placed bounds with the chosen label position
+      const finalBounds = calcBounds(chosenSubLane);
+      finalBounds.labelPosition = chosenLabelPosition;
+      placedBounds.push(finalBounds);
+
+      // Update sub-lane end time for time overlap tracking
+      const key = `${row}:${chosenSubLane}`;
+      const currentEndTime = subLaneEndTimes.get(key) ?? -Infinity;
+      // Use a minimum width for time overlap (approximating label + circle width)
+      const eventEndTime =
+        assignment.startTime +
+        ((labelWidth + labelGap + circleRadius * 2) / this.options.width) *
+          (this.viewport.endTime - this.viewport.startTime);
+      subLaneEndTimes.set(key, Math.max(currentEndTime, eventEndTime));
     }
 
-    // Third pass: render events with determined label positions
-    for (const event of events) {
-      const labelPosition = labelPositions.get(event.id) ?? "right";
-      this.renderEvent(event, labelPosition);
+    // Render all events with their determined positions
+    for (const { event, row, isRelatedEvent } of eventData) {
+      const position = finalPositions.get(event.id);
+      if (!position) continue;
+
+      this.renderEventWithSubLane(
+        event,
+        row,
+        position.subLane,
+        isRelatedEvent,
+        position.labelPosition,
+      );
     }
   }
 
   /**
-   * Check if a label at the given position would overlap with other events or their labels
+   * Check if a label at the given position would overlap with other events, labels, or connectors
    */
   private checkLabelOverlap(
     bounds: EventBounds,
     position: "right" | "left",
-    allBounds: EventBounds[],
-    labelPositions: Map<string, LabelPosition>,
+    placedBounds: EventBounds[],
+    connectorBoxes: ConnectorBox[],
   ): boolean {
     const labelX =
       position === "right" ? bounds.rightLabelX : bounds.leftLabelX;
@@ -1421,30 +1727,45 @@ export class TimelineRenderer {
     const labelTop = bounds.labelY;
     const labelBottom = bounds.labelY + bounds.labelHeight;
 
-    for (const other of allBounds) {
+    // Also check the circle bounds
+    const circleLeft = bounds.circleX - bounds.circleRadius;
+    const circleRight = bounds.circleX + bounds.circleRadius;
+    const circleTop = bounds.circleY - bounds.circleRadius;
+    const circleBottom = bounds.circleY + bounds.circleRadius;
+
+    // Check overlap with placed events and their labels
+    for (const other of placedBounds) {
       if (other.id === bounds.id) continue;
 
-      // Check overlap with other event's circle
-      // Circle bounds (as a box)
-      const circleLeft = other.circleX - other.circleRadius;
-      const circleRight = other.circleX + other.circleRadius;
-      const circleTop = other.circleY - other.circleRadius;
-      const circleBottom = other.circleY + other.circleRadius;
+      // Check if our circle overlaps with other's circle
+      const otherCircleLeft = other.circleX - other.circleRadius;
+      const otherCircleRight = other.circleX + other.circleRadius;
+      const otherCircleTop = other.circleY - other.circleRadius;
+      const otherCircleBottom = other.circleY + other.circleRadius;
 
       if (
-        labelX < circleRight &&
-        labelRight > circleLeft &&
-        labelTop < circleBottom &&
-        labelBottom > circleTop
+        circleLeft < otherCircleRight &&
+        circleRight > otherCircleLeft &&
+        circleTop < otherCircleBottom &&
+        circleBottom > otherCircleTop
       ) {
-        return true; // Overlaps with circle
+        return true; // Our circle overlaps with other's circle
       }
 
-      // Check overlap with other event's label (if it has been positioned)
-      const otherLabelPosition = labelPositions.get(other.id);
-      if (otherLabelPosition && otherLabelPosition !== "hidden") {
+      // Check label overlap with other event's circle
+      if (
+        labelX < otherCircleRight &&
+        labelRight > otherCircleLeft &&
+        labelTop < otherCircleBottom &&
+        labelBottom > otherCircleTop
+      ) {
+        return true; // Label overlaps with other's circle
+      }
+
+      // Check overlap with other event's label (if visible)
+      if (other.labelPosition && other.labelPosition !== "hidden") {
         const otherLabelX =
-          otherLabelPosition === "right" ? other.rightLabelX : other.leftLabelX;
+          other.labelPosition === "right" ? other.rightLabelX : other.leftLabelX;
         const otherLabelRight = otherLabelX + other.labelWidth;
         const otherLabelTop = other.labelY;
         const otherLabelBottom = other.labelY + other.labelHeight;
@@ -1460,14 +1781,44 @@ export class TimelineRenderer {
       }
     }
 
+    // Check overlap with connector paths
+    for (const box of connectorBoxes) {
+      const boxRight = box.x + box.width;
+      const boxBottom = box.y + box.height;
+
+      // Check if label overlaps with connector box
+      if (
+        labelX < boxRight &&
+        labelRight > box.x &&
+        labelTop < boxBottom &&
+        labelBottom > box.y
+      ) {
+        return true; // Label overlaps with connector
+      }
+
+      // Check if circle overlaps with connector box
+      if (
+        circleLeft < boxRight &&
+        circleRight > box.x &&
+        circleTop < boxBottom &&
+        circleBottom > box.y
+      ) {
+        return true; // Circle overlaps with connector
+      }
+    }
+
     return false;
   }
 
   /**
-   * Render an event as a marker
+   * Render an event with a specific sub-lane position
+   * Used by the smart positioning algorithm
    */
-  private renderEvent(
+  private renderEventWithSubLane(
     event: TimelineEvent,
+    row: number,
+    subLane: number,
+    isRelatedEvent: boolean,
     labelPosition: LabelPosition = "right",
   ): void {
     if (!this.svg) return;
@@ -1475,15 +1826,10 @@ export class TimelineRenderer {
     const assignment = this.laneAssignments.find((a) => a.itemId === event.id);
     if (!assignment) return;
 
-    const row = this.rowMapping.get(event.id);
-    if (row === undefined) return;
-
     const x = this.timeToX(assignment.startTime);
     const height = 20; // Event row height
 
-    // Calculate Y position using sub-lane
-    const subLane = assignment.subLane ?? 1; // Default to middle sub-lane
-    const isRelatedEvent = !!event.relates_to;
+    // Calculate Y position using the specified sub-lane
     const y = this.eventToY(row, subLane, isRelatedEvent);
 
     // Event marker (hollow circle, smaller)

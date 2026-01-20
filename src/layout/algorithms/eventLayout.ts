@@ -2,7 +2,7 @@
  * Event layout algorithm
  * Events can be laid out in a separate section from periods,
  * or positioned below a specific period if they have a relates_to reference.
- * Events use a 3-sub-lane structure within their vertical space.
+ * Related events use a 3-sub-lane structure: -1 (above period), 0 (just below), 1 (further below)
  */
 
 import type { TimelineEvent, LaneAssignment, NormalizedTime } from '../../core/types';
@@ -19,29 +19,30 @@ function overlaps(
 }
 
 /**
- * Assign a sub-lane (0, 1, or 2) to an event within a period's vertical space.
- * Prefers sub-lane 1 (middle), then tries 0 and 2 to avoid overlaps.
+ * Assign a sub-lane (-1, 0, or 1) to an event within a period's vertical space.
+ * Preference order: 0 (just below period), 1 (further below), -1 (above period)
  */
 function assignSubLane(
   time: NormalizedTime,
-  subLaneEndTimes: Array<NormalizedTime>
+  subLaneEndTimes: Map<number, NormalizedTime>
 ): number {
-  // Try sub-lanes in order of preference: 1 (middle), 0 (top), 2 (bottom)
-  const preferenceOrder = [1, 0, 2];
+  // Try sub-lanes in order of preference: 0 (just below), 1 (further below), -1 (above)
+  const preferenceOrder = [0, 1, -1];
 
   for (const subLane of preferenceOrder) {
-    if (!overlaps(time, subLaneEndTimes[subLane]!)) {
+    if (!overlaps(time, subLaneEndTimes.get(subLane)!)) {
       return subLane;
     }
   }
 
   // All sub-lanes have overlaps, find the one with earliest end time
-  let bestSubLane = 1;
-  let earliestTime = subLaneEndTimes[1]!;
-  for (let i = 0; i < 3; i++) {
-    if (subLaneEndTimes[i]! < earliestTime) {
-      bestSubLane = i;
-      earliestTime = subLaneEndTimes[i]!;
+  let bestSubLane = 0;
+  let earliestTime = subLaneEndTimes.get(0)!;
+  for (const subLane of preferenceOrder) {
+    const endTime = subLaneEndTimes.get(subLane)!;
+    if (endTime < earliestTime) {
+      bestSubLane = subLane;
+      earliestTime = endTime;
     }
   }
   return bestSubLane;
@@ -50,7 +51,7 @@ function assignSubLane(
 /**
  * Assign events to lanes and sub-lanes
  * - Events with relates_to are assigned to the same lane as their related period,
- *   with sub-lanes (0, 1, 2) to avoid overlaps within that period's space
+ *   with sub-lanes (-1, 0, 1) to avoid overlaps within that period's space
  * - Events without relates_to are assigned to lanes after all periods (limited to 3 lanes),
  *   with sub-lane corresponding to their lane position
  */
@@ -96,12 +97,14 @@ export function assignEventLanes(
     // Sort events by time
     eventsInLane.sort((a, b) => a.time - b.time);
 
-    // Track end times for each sub-lane (0, 1, 2)
-    const subLaneEndTimes: NormalizedTime[] = [-Infinity, -Infinity, -Infinity];
+    // Track end times for each sub-lane (-1, 0, 1)
+    const subLaneEndTimes = new Map<number, NormalizedTime>([
+      [-1, -Infinity], [0, -Infinity], [1, -Infinity]
+    ]);
 
     for (const { event, time } of eventsInLane) {
       const subLane = assignSubLane(time, subLaneEndTimes);
-      subLaneEndTimes[subLane] = time;
+      subLaneEndTimes.set(subLane, time);
 
       assignments.push({
         itemId: event.id,

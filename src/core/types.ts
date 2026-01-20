@@ -77,7 +77,6 @@ export interface RenderConstraints {
   minEventWidth: number; // Minimum pixel width for events
   maxEventWidth: number; // Maximum pixel width for events
   periodHeight: number; // Pixel height for periods
-  laneHeight: number; // Vertical spacing between lanes
   laneGap: number; // Gap between lanes
 }
 
@@ -112,7 +111,7 @@ export interface LaneAssignment {
   startTime: NormalizedTime;
   endTime: NormalizedTime;
   type?: 'period' | 'event';
-  subLane?: number; // For events: sub-lane within the period's vertical space (0, 1, or 2)
+  subLane?: number; // For events: sub-lane within the period's vertical space (-1=above, 0=below, 1=further below)
 }
 
 /**
