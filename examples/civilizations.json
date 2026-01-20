@@ -142,7 +142,7 @@
     {
       "id": "event-natufian-culture",
       "name": "Natufian Culture Flourishes",
-      "time": { "year": 12500, "era": "BCE" },
+      "time": { "value": 12500, "unit": "bce" },
       "relates_to": "period-mesolithic",
       "info": "The Natufian culture emerges in the Levant as sedentary hunter-gatherers who may have cultivated wild rye. Living in permanent villages, they represent a crucial transition between mobile foraging and settled agricultural life."
     },
@@ -156,168 +156,168 @@
     {
       "id": "event-first-figs",
       "name": "First Cultivated Figs",
-      "time": { "year": 9400, "era": "BCE" },
+      "time": { "value": 9400, "unit": "bce" },
       "relates_to": "period-neolithic",
       "info": "Parthenocarpic (sterile) figs cultivated at Gilgal I in the Jordan Valley may represent the earliest known instance of agriculture, predating the domestication of wheat, barley, and legumes by about a thousand years."
     },
     {
       "id": "event-jericho-tower",
       "name": "Tower of Jericho Built",
-      "time": { "year": 8000, "era": "BCE" },
+      "time": { "value": 8000, "unit": "bce" },
       "relates_to": "period-neolithic",
       "info": "A round stone tower 8.5 meters high and 8.5 meters in diameter is built at Jericho, one of the oldest known stone monuments. Its purpose remains debated—possibly defensive, ceremonial, or for flood protection."
     },
     {
       "id": "event-mehrgarh-founded",
       "name": "Mehrgarh Settlement Founded",
-      "time": { "year": 7000, "era": "BCE" },
+      "time": { "value": 7000, "unit": "bce" },
       "relates_to": "period-mehrgarh",
       "info": "One of the earliest Neolithic settlements in South Asia is established at Mehrgarh in Balochistan (modern Pakistan). Inhabitants cultivate wheat and barley, domesticate cattle, sheep and goats, and develop mud-brick architecture. This pre-Harappan culture lays the foundation for the later Indus Valley Civilization."
     },
     {
       "id": "event-mehrgarh-pottery",
       "name": "Mehrgarh Pottery and Craft Production",
-      "time": { "year": 5500, "era": "BCE" },
+      "time": { "value": 5500, "unit": "bce" },
       "relates_to": "period-mehrgarh",
       "info": "Mehrgarh develops sophisticated pottery, bead-making, and metallurgy. Artisans create distinctive ceramics and drill tiny beads from semi-precious stones. Evidence of early dentistry—drilling teeth to treat decay—appears at this site, the oldest known dental work."
     },
     {
       "id": "event-catal-huyuk",
       "name": "Çatalhöyük Settlement Founded",
-      "time": { "year": 7500, "era": "BCE" },
+      "time": { "value": 7500, "unit": "bce" },
       "relates_to": "period-neolithic",
       "info": "One of the world's first proto-cities emerges in Anatolia, housing up to 10,000 people. Residents enter homes through roof hatches, decorate walls with murals and reliefs, and bury dead beneath house floors."
     },
     {
       "id": "event-copper-smelting",
       "name": "Earliest Copper Smelting",
-      "time": { "year": 5000, "era": "BCE" },
+      "time": { "value": 5000, "unit": "bce" },
       "relates_to": "period-chalcolithic",
       "info": "Copper smelting begins in the Balkans and possibly independently in other regions. The Vinča culture in Serbia provides some of the oldest securely dated evidence of high-temperature copper working."
     },
     {
       "id": "event-proto-cuneiform",
       "name": "Proto-Cuneiform Writing Appears",
-      "time": { "year": 3700, "era": "BCE" },
+      "time": { "value": 3700, "unit": "bce" },
       "relates_to": "period-chalcolithic",
       "info": "Pictographic proto-writing appears in Sumer for record-keeping, representing the earliest known writing system. Initially used for accounting and administration, it will evolve into full cuneiform script."
     },
     {
       "id": "event-otzi-iceman",
       "name": "Ötzi the Iceman Dies",
-      "time": { "year": 3300, "era": "BCE" },
+      "time": { "value": 3300, "unit": "bce" },
       "relates_to": "period-chalcolithic",
       "info": "A man later known as Ötzi dies in the Alps, his body preserved by ice until discovery in 1991. His copper axe, clothing, and equipment provide extraordinary insight into Chalcolithic life. Evidence suggests he was murdered."
     },
     {
       "id": "event-skara-brae",
       "name": "Skara Brae Settlement Built",
-      "time": { "year": 3100, "era": "BCE" },
+      "time": { "value": 3100, "unit": "bce" },
       "relates_to": "period-neolithic",
       "info": "A stone-built Neolithic village is constructed in Orkney, Scotland, featuring ten clustered houses with stone hearths, beds, cupboards, and a sophisticated drainage system. Occupied for 600 years before abandonment."
     },
     {
       "id": "event-stonehenge",
       "name": "Stonehenge Construction Begins",
-      "time": { "year": 3000, "era": "BCE" },
+      "time": { "value": 3000, "unit": "bce" },
       "relates_to": "period-neolithic",
       "info": "Construction begins on Stonehenge in England, initially as a circular ditch and bank with 56 wooden posts. The famous stone circle is added later, with some stones transported from Wales, 150 miles away."
     },
     {
       "id": "event-yamnaya-expansion",
       "name": "Yamnaya Migrations Begin",
-      "time": { "year": 3000, "era": "BCE" },
+      "time": { "value": 3000, "unit": "bce" },
       "relates_to": "period-bronze-age",
       "info": "Pastoral nomads from the Pontic-Caspian steppe begin expanding into Europe and Asia. These migrations spread Yamnaya ancestry and are thought to have carried Indo-European languages across much of Eurasia."
     },
     {
       "id": "event-cuneiform",
       "name": "Invention of Cuneiform Writing",
-      "time": { "year": 3400, "era": "BCE" },
+      "time": { "value": 3400, "unit": "bce" },
       "relates_to": "period-sumer",
       "info": "The Sumerians develop cuneiform, one of the earliest writing systems. Initially used for record-keeping, it evolves to record literature, law, and science. Cuneiform is adapted by subsequent Mesopotamian civilizations."
     },
     {
       "id": "event-pyramids-giza",
       "name": "Great Pyramids of Giza Built",
-      "time": { "year": 2560, "era": "BCE" },
+      "time": { "value": 2560, "unit": "bce" },
       "relates_to": "period-egypt",
       "info": "Pharaoh Khufu commissions the Great Pyramid, the largest of the Giza pyramids. These monuments demonstrate Egypt's organizational capacity, engineering knowledge, and religious beliefs about the afterlife."
     },
     {
       "id": "event-code-hammurabi",
       "name": "Code of Hammurabi",
-      "time": { "year": 1754, "era": "BCE" },
+      "time": { "value": 1754, "unit": "bce" },
       "relates_to": "period-babylon",
       "info": "Babylonian king Hammurabi promulgates one of the oldest known written legal codes. Its 282 laws cover family, commerce, and criminal matters, establishing the principle of 'an eye for an eye'."
     },
     {
       "id": "event-bronze-age-collapse",
       "name": "Bronze Age Collapse",
-      "time": { "year": 1200, "era": "BCE" },
+      "time": { "value": 1200, "unit": "bce" },
       "relates_to": "period-hittite",
       "info": "A catastrophic period sees the fall of multiple Mediterranean civilizations including the Hittites, Mycenaeans, and others. Causes may include climate change, invasions by 'Sea Peoples', and systemic failures. Ushers in a centuries-long 'dark age'."
     },
     {
       "id": "event-founding-rome",
       "name": "Traditional Founding of Rome",
-      "time": { "year": 753, "era": "BCE" },
+      "time": { "value": 753, "unit": "bce" },
       "relates_to": "period-rome",
       "info": "According to legend, Romulus founds Rome after killing his twin brother Remus. Archaeological evidence suggests the settlement actually developed gradually from earlier Latin and Etruscan communities."
     },
     {
       "id": "event-first-olympics",
       "name": "First Olympic Games",
-      "time": { "year": 776, "era": "BCE" },
+      "time": { "value": 776, "unit": "bce" },
       "relates_to": "period-greece",
       "info": "The first recorded Olympic Games are held at Olympia in honor of Zeus. The games become a unifying event for Greek city-states, establishing a four-year cycle and a tradition lasting over a millennium."
     },
     {
       "id": "event-athenian-democracy",
       "name": "Athenian Democracy Established",
-      "time": { "year": 508, "era": "BCE" },
+      "time": { "value": 508, "unit": "bce" },
       "relates_to": "period-greece",
       "info": "Cleisthenes reforms Athenian government, creating the world's first known democracy. Citizens participate directly in legislation and judicial decisions, though women, slaves, and foreigners are excluded."
     },
     {
       "id": "event-persian-wars",
       "name": "Persian Wars Begin",
-      "time": { "year": 499, "era": "BCE" },
+      "time": { "value": 499, "unit": "bce" },
       "relates_to": "period-persia-achaemenid",
       "info": "The Ionian Revolt against Persian rule sparks decades of conflict between Greece and Persia. Key battles at Marathon, Thermopylae, and Salamis become legendary, shaping Greek identity and Western historical memory."
     },
     {
       "id": "event-alexander-conquest",
       "name": "Alexander Conquers Persia",
-      "time": { "year": 330, "era": "BCE" },
+      "time": { "value": 330, "unit": "bce" },
       "relates_to": "period-macedon",
       "info": "Alexander the Great defeats Darius III and conquers the Achaemenid Empire. His campaigns spread Greek culture from Egypt to India, initiating the Hellenistic period of cultural fusion."
     },
     {
       "id": "event-qin-unification",
       "name": "Qin Unifies China",
-      "time": { "year": 221, "era": "BCE" },
+      "time": { "value": 221, "unit": "bce" },
       "relates_to": "period-qin",
       "info": "Qin Shi Huang conquers rival states and establishes China's first unified empire. He standardizes weights, measures, currency, and writing, and begins construction of the Great Wall. His brutal reign ends after just 15 years."
     },
     {
       "id": "event-punic-wars-end",
       "name": "Rome Destroys Carthage",
-      "time": { "year": 146, "era": "BCE" },
+      "time": { "value": 146, "unit": "bce" },
       "relates_to": "period-rome",
       "info": "Rome defeats Carthage in the Third Punic War, destroying the city and salting the earth. Rome becomes the dominant power in the Mediterranean, controlling North Africa, Spain, and beyond."
     },
     {
       "id": "event-julius-caesar-assassination",
       "name": "Assassination of Julius Caesar",
-      "time": { "year": 44, "era": "BCE" },
+      "time": { "value": 44, "unit": "bce" },
       "relates_to": "period-rome",
       "info": "Julius Caesar is assassinated by senators fearing his dictatorial power. His death triggers civil war and ultimately the end of the Roman Republic, as his adopted heir Octavian becomes Emperor Augustus."
     },
     {
       "id": "event-silk-road-established",
       "name": "Silk Road Trade Flourishes",
-      "time": { "year": 130, "era": "BCE" },
+      "time": { "value": 130, "unit": "bce" },
       "relates_to": "period-han",
       "info": "The Han Dynasty establishes regular diplomatic and trade contact with Central Asia following Zhang Qian's expeditions. The Silk Road connects China with Persia, India, and eventually Rome, facilitating exchange of goods, ideas, and religions."
     },
@@ -372,7 +372,7 @@
     {
       "id": "event-maya-classic-collapse",
       "name": "Classic Maya Collapse",
-      "time": { "year": 900, "era": "CE" },
+      "time": { "value": 900, "unit": "ce" },
       "relates_to": "period-maya",
       "info": "Major Maya cities in the southern lowlands are abandoned over several decades. Causes may include drought, warfare, overpopulation, and environmental degradation. Maya civilization continues in the northern Yucatan."
     },
@@ -519,224 +519,224 @@
       "id": "period-mesolithic",
       "name": "Mesolithic",
       "startTime": { "value": 12000, "unit": "years-ago" },
-      "endTime": { "year": 7000, "era": "BCE" },
+      "endTime": { "value": 7000, "unit": "bce" },
       "info": "The 'Middle Stone Age' bridges the Paleolithic and Neolithic, beginning as glaciers retreat at the end of the Pleistocene. Characterized by microlithic tools, fishing tackle, and the first canoes. The Natufian culture in the Levant represents sedentary hunter-gatherers who may have begun cultivating wild cereals."
     },
     {
       "id": "period-neolithic",
       "name": "Neolithic",
-      "startTime": { "year": 10200, "era": "BCE" },
-      "endTime": { "year": 4500, "era": "BCE" },
+      "startTime": { "value": 10200, "unit": "bce" },
+      "endTime": { "value": 4500, "unit": "bce" },
       "info": "The 'New Stone Age' witnesses the Neolithic Revolution: the transition from hunting-gathering to agriculture and settled life. Crops and animals are domesticated, permanent villages emerge, pottery is invented, and megalithic monuments like Stonehenge are built. This transformation begins in the Fertile Crescent and spreads gradually across the world."
     },
     {
       "id": "period-chalcolithic",
       "name": "Chalcolithic (Copper Age)",
-      "startTime": { "year": 5000, "era": "BCE" },
-      "endTime": { "year": 3300, "era": "BCE" },
+      "startTime": { "value": 5000, "unit": "bce" },
+      "endTime": { "value": 3300, "unit": "bce" },
       "info": "A transitional period between the Stone Age and Bronze Age when copper metallurgy first appears alongside stone tools. Copper smelting may have been invented independently in multiple locations. The period sees the rise of the first fortified settlements, increasing social stratification, and the earliest proto-writing systems."
     },
     {
       "id": "period-bronze-age",
       "name": "Bronze Age",
-      "startTime": { "year": 3300, "era": "BCE" },
-      "endTime": { "year": 1200, "era": "BCE" },
+      "startTime": { "value": 3300, "unit": "bce" },
+      "endTime": { "value": 1200, "unit": "bce" },
       "info": "The discovery that adding tin to copper creates harder bronze revolutionizes tool and weapon making. The first true civilizations with writing emerge: Sumer, Egypt, the Indus Valley, and Shang China. Long-distance trade networks develop to obtain rare tin. The period ends with a widespread collapse around 1200 BCE affecting many Mediterranean civilizations."
     },
     {
       "id": "period-iron-age",
       "name": "Iron Age",
-      "startTime": { "year": 1200, "era": "BCE" },
-      "endTime": { "year": 500, "era": "BCE" },
+      "startTime": { "value": 1200, "unit": "bce" },
+      "endTime": { "value": 500, "unit": "bce" },
       "info": "Iron working technology spreads, democratizing access to metal tools and weapons since iron ore is far more common than tin. This period sees the rise of classical civilizations in Greece, Rome, Persia, India, and China. Writing becomes widespread, and many regions transition from prehistory to recorded history."
     },
     {
       "id": "period-gobekli-tepe",
       "name": "Göbekli Tepe Culture",
-      "startTime": { "year": 9500, "era": "BCE" },
-      "endTime": { "year": 8000, "era": "BCE" },
+      "startTime": { "value": 9500, "unit": "bce" },
+      "endTime": { "value": 8000, "unit": "bce" },
       "info": "A pre-pottery Neolithic culture in southeastern Anatolia that constructed Göbekli Tepe, the world's oldest known monumental architecture. Hunter-gatherers erected massive stone circles with T-shaped pillars carved with animals and symbols, challenging assumptions that organized religion and monumental building required settled agricultural societies. The site was deliberately buried around 8000 BCE for unknown reasons."
     },
     {
       "id": "period-uruk",
       "name": "Uruk Period",
-      "startTime": { "year": 4000, "era": "BCE" },
-      "endTime": { "year": 3100, "era": "BCE" },
+      "startTime": { "value": 4000, "unit": "bce" },
+      "endTime": { "value": 3100, "unit": "bce" },
       "info": "The period when Uruk became the world's first true city, with a population reaching 40,000-80,000. Uruk saw the development of proto-cuneiform writing, cylinder seals, monumental architecture (including temples to Inanna), and the first bureaucratic administration. The 'Uruk expansion' spread Mesopotamian culture across the Near East."
     },
     {
       "id": "period-sumer",
       "name": "Sumerian Civilization",
-      "startTime": { "year": 4500, "era": "BCE" },
-      "endTime": { "year": 1900, "era": "BCE" },
+      "startTime": { "value": 4500, "unit": "bce" },
+      "endTime": { "value": 1900, "unit": "bce" },
       "info": "The world's first urban civilization emerges in southern Mesopotamia (modern Iraq). Sumerians invent cuneiform writing, the wheel, and the plow. City-states like Ur, Uruk, and Eridu develop complex governments, religions, and the first known literary work, the Epic of Gilgamesh."
     },
     {
       "id": "period-minoan",
       "name": "Minoan Civilization",
-      "startTime": { "year": 3000, "era": "BCE" },
-      "endTime": { "year": 1100, "era": "BCE" },
+      "startTime": { "value": 3000, "unit": "bce" },
+      "endTime": { "value": 1100, "unit": "bce" },
       "info": "Europe's first advanced civilization, centered on the island of Crete. The Minoans built elaborate palace complexes at Knossos, Phaistos, and Malia, developed Linear A script (still undeciphered), and created distinctive art featuring bulls, marine life, and acrobatic sports. Their civilization influenced the later Mycenaean Greeks."
     },
     {
       "id": "period-mycenean",
       "name": "Mycenaean civilization",
-      "startTime": { "year": 1750, "era": "BCE" },
-      "endTime": { "year": 1050, "era": "BCE" },
+      "startTime": { "value": 1750, "unit": "bce" },
+      "endTime": { "value": 1050, "unit": "bce" },
       "info": "Mycenaean civilization was the last phase of the Bronze Age in ancient Greece. It represents the first advanced and distinctively Greek civilization in mainland Greece with its palatial states, urban organization, works of art, and writing system. The Mycenaeans were mainland Greek peoples who were likely stimulated by their contact with insular Minoan Crete and other Mediterranean cultures to develop a more sophisticated sociopolitical culture of their own."
     },
     {
       "id": "period-egypt",
       "name": "Ancient Egypt",
-      "startTime": { "year": 3150, "era": "BCE" },
-      "endTime": { "year": 30, "era": "BCE" },
+      "startTime": { "value": 3150, "unit": "bce" },
+      "endTime": { "value": 30, "unit": "bce" },
       "info": "One of history's longest-lasting civilizations, unified under pharaohs who are considered living gods. Egyptians build pyramids, develop hieroglyphic writing, and create a rich religious tradition focused on the afterlife. The civilization endures through multiple dynasties until Roman conquest."
     },
     {
       "id": "period-mehrgarh",
       "name": "Mehrgarh Culture",
-      "startTime": { "year": 7000, "era": "BCE" },
-      "endTime": { "year": 2600, "era": "BCE" },
+      "startTime": { "value": 7000, "unit": "bce" },
+      "endTime": { "value": 2600, "unit": "bce" },
       "info": "A pre-Harappan Neolithic culture centered at Mehrgarh in Balochistan, representing the earliest farming community in South Asia. Over 4,000 years, inhabitants develop agriculture, animal husbandry, pottery, metallurgy, and long-distance trade. The culture shows continuous evolution leading directly to the Indus Valley Civilization."
     },
     {
       "id": "period-indus",
       "name": "Indus Valley Civilization",
-      "startTime": { "year": 3300, "era": "BCE" },
-      "endTime": { "year": 1300, "era": "BCE" },
+      "startTime": { "value": 3300, "unit": "bce" },
+      "endTime": { "value": 1300, "unit": "bce" },
       "info": "A sophisticated Bronze Age civilization in South Asia with major cities at Mohenjo-daro and Harappa. Features advanced urban planning, standardized weights and measures, and sophisticated drainage systems. Its script remains undeciphered, and its decline is still debated."
     },
     {
       "id": "period-akkad",
       "name": "Akkadian Empire",
-      "startTime": { "year": 2334, "era": "BCE" },
-      "endTime": { "year": 2154, "era": "BCE" },
+      "startTime": { "value": 2334, "unit": "bce" },
+      "endTime": { "value": 2154, "unit": "bce" },
       "info": "The world's first empire, founded by Sargon of Akkad who conquers Sumerian city-states and creates a unified state. Akkadian becomes the lingua franca of the ancient Near East. The empire introduces new administrative techniques but collapses after about 180 years."
     },
     {
       "id": "period-babylon",
       "name": "Babylonian Empire",
-      "startTime": { "year": 1894, "era": "BCE" },
-      "endTime": { "year": 539, "era": "BCE" },
+      "startTime": { "value": 1894, "unit": "bce" },
+      "endTime": { "value": 539, "unit": "bce" },
       "info": "A Mesopotamian civilization centered on Babylon. Under Hammurabi, it produces one of history's first law codes. After decline and Assyrian rule, the Neo-Babylonian Empire under Nebuchadnezzar II builds the Hanging Gardens and destroys Jerusalem before falling to Persia."
     },
     {
       "id": "period-assyria",
       "name": "Assyrian Empire",
-      "startTime": { "year": 2500, "era": "BCE" },
-      "endTime": { "year": 609, "era": "BCE" },
+      "startTime": { "value": 2500, "unit": "bce" },
+      "endTime": { "value": 609, "unit": "bce" },
       "info": "A Mesopotamian empire known for military prowess and administrative innovation. The Neo-Assyrian Empire (911-609 BCE) becomes the largest empire yet seen, controlling Mesopotamia, the Levant, and Egypt. Known for brutal warfare but also library-building and astronomical records."
     },
     {
       "id": "period-hittite",
       "name": "Hittite Empire",
-      "startTime": { "year": 1600, "era": "BCE" },
-      "endTime": { "year": 1178, "era": "BCE" },
+      "startTime": { "value": 1600, "unit": "bce" },
+      "endTime": { "value": 1178, "unit": "bce" },
       "info": "An Anatolian civilization that rivals Egypt and Mesopotamia. The Hittites develop iron-working technology and create one of the earliest known peace treaties with Egypt. Their empire collapses during the Bronze Age collapse around 1200 BCE."
     },
     {
       "id": "period-phoenicia",
       "name": "Phoenician Civilization",
-      "startTime": { "year": 1500, "era": "BCE" },
-      "endTime": { "year": 332, "era": "BCE" },
+      "startTime": { "value": 1500, "unit": "bce" },
+      "endTime": { "value": 332, "unit": "bce" },
       "info": "Seafaring traders from the Levant who establish a commercial network across the Mediterranean. Phoenicians found Carthage and other colonies, produce purple dye, and create an alphabet that becomes the ancestor of Greek, Latin, Arabic, and Hebrew scripts."
     },
     {
       "id": "period-shang",
       "name": "Shang Dynasty",
-      "startTime": { "year": 1600, "era": "BCE" },
-      "endTime": { "year": 1046, "era": "BCE" },
+      "startTime": { "value": 1600, "unit": "bce" },
+      "endTime": { "value": 1046, "unit": "bce" },
       "info": "China's first historically verified dynasty, known for bronze casting, oracle bone divination, and the earliest Chinese writing. The Shang ruled from a series of capitals in the Yellow River valley, with Yin (near Anyang) as their final capital. Their sophisticated bronze vessels and jade artifacts demonstrate advanced craftsmanship."
     },
     {
       "id": "period-zhou",
       "name": "Zhou Dynasty",
-      "startTime": { "year": 1046, "era": "BCE" },
-      "endTime": { "year": 256, "era": "BCE" },
+      "startTime": { "value": 1046, "unit": "bce" },
+      "endTime": { "value": 256, "unit": "bce" },
       "info": "China's longest dynasty, introducing the Mandate of Heaven concept. The early Western Zhou maintains centralized control, but the Eastern Zhou period sees fragmentation into competing states. This era produces Confucius, Laozi, and other foundational Chinese philosophers."
     },
     {
       "id": "period-greece",
       "name": "Ancient Greece",
-      "startTime": { "year": 800, "era": "BCE" },
-      "endTime": { "year": 146, "era": "BCE" },
+      "startTime": { "value": 800, "unit": "bce" },
+      "endTime": { "value": 146, "unit": "bce" },
       "info": "A civilization of independent city-states that develops democracy, philosophy, theater, and the Olympic Games. Athens and Sparta lead the defense against Persian invasion. Greek culture spreads through Alexander's conquests, becoming the foundation of Western civilization."
     },
     {
       "id": "period-persia-achaemenid",
       "name": "Achaemenid Persian Empire",
-      "startTime": { "year": 550, "era": "BCE" },
-      "endTime": { "year": 330, "era": "BCE" },
+      "startTime": { "value": 550, "unit": "bce" },
+      "endTime": { "value": 330, "unit": "bce" },
       "info": "The first Persian Empire, founded by Cyrus the Great. At its height under Darius I, it spans from Egypt to India, the largest empire yet seen. Known for religious tolerance, efficient administration via satrapies, and the Royal Road communication system."
     },
     {
       "id": "period-carthage",
       "name": "Carthaginian Empire",
-      "startTime": { "year": 814, "era": "BCE" },
-      "endTime": { "year": 146, "era": "BCE" },
+      "startTime": { "value": 814, "unit": "bce" },
+      "endTime": { "value": 146, "unit": "bce" },
       "info": "A Phoenician colony that becomes a major Mediterranean power. Carthage controls trade routes and North African territories, coming into conflict with Rome in the Punic Wars. General Hannibal famously crosses the Alps with elephants. Rome ultimately destroys the city entirely."
     },
     {
       "id": "period-macedon",
       "name": "Macedonian Empire",
-      "startTime": { "year": 359, "era": "BCE" },
-      "endTime": { "year": 323, "era": "BCE" },
+      "startTime": { "value": 359, "unit": "bce" },
+      "endTime": { "value": 323, "unit": "bce" },
       "info": "Under Philip II and his son Alexander the Great, Macedonia transforms from a regional kingdom to a world empire. Alexander conquers Persia, Egypt, and reaches India. His empire fragments after his death, but Hellenistic successor states spread Greek culture across the Near East."
     },
     {
       "id": "period-maurya",
       "name": "Maurya Empire",
-      "startTime": { "year": 322, "era": "BCE" },
-      "endTime": { "year": 185, "era": "BCE" },
+      "startTime": { "value": 322, "unit": "bce" },
+      "endTime": { "value": 185, "unit": "bce" },
       "info": "India's first major empire, founded by Chandragupta Maurya. Under Ashoka, it encompasses most of the Indian subcontinent. Ashoka's conversion to Buddhism after the bloody Kalinga War leads him to promote non-violence and dharma through his famous edicts."
     },
     {
       "id": "period-qin",
       "name": "Qin Dynasty",
-      "startTime": { "year": 221, "era": "BCE" },
-      "endTime": { "year": 206, "era": "BCE" },
+      "startTime": { "value": 221, "unit": "bce" },
+      "endTime": { "value": 206, "unit": "bce" },
       "info": "China's first imperial dynasty unifies the warring states under Qin Shi Huang, the 'First Emperor.' Brutal but transformative, the Qin standardizes writing, currency, and measurements, builds the Great Wall's first sections, and creates the Terracotta Army. Collapses shortly after the emperor's death."
     },
     {
       "id": "period-han",
       "name": "Han Dynasty",
-      "startTime": { "year": 206, "era": "BCE" },
-      "endTime": { "year": 220, "era": "CE" },
+      "startTime": { "value": 206, "unit": "bce" },
+      "endTime": { "value": 220, "unit": "ce" },
       "info": "One of China's golden ages, so influential that ethnic Chinese still call themselves 'Han people.' The dynasty establishes Confucianism as state ideology, creates the civil service examination, expands the Silk Road trade, and invents paper. Considered a classical era of Chinese civilization."
     },
     {
       "id": "period-rome",
       "name": "Roman Civilization",
-      "startTime": { "year": 753, "era": "BCE" },
+      "startTime": { "value": 753, "unit": "bce" },
       "endTime": "0476-09-04",
       "info": "From a small Italian city-state to an empire spanning three continents. Rome evolves from monarchy to republic to empire, developing law, engineering, and military systems that influence the world for millennia. Latin becomes the basis for Romance languages; Roman law underlies Western legal traditions."
     },
     {
       "id": "period-parthia",
       "name": "Parthian Empire",
-      "startTime": { "year": 247, "era": "BCE" },
-      "endTime": { "year": 224, "era": "CE" },
+      "startTime": { "value": 247, "unit": "bce" },
+      "endTime": { "value": 224, "unit": "ce" },
       "info": "An Iranian empire that succeeds the Seleucids and becomes Rome's eastern rival. Parthia controls the Silk Road trade, develops heavy cavalry tactics, and defeats multiple Roman invasions. Famous for the 'Parthian shot'—firing arrows while retreating on horseback."
     },
     {
       "id": "period-kushan",
       "name": "Kushan Empire",
-      "startTime": { "year": 30, "era": "CE" },
-      "endTime": { "year": 375, "era": "CE" },
+      "startTime": { "value": 30, "unit": "ce" },
+      "endTime": { "value": 375, "unit": "ce" },
       "info": "A Central Asian empire controlling the Silk Road's crucial middle section. Under Kanishka, the Kushans patronize Buddhism and Greco-Buddhist art. The empire facilitates cultural exchange between China, India, Persia, and Rome."
     },
     {
       "id": "period-sasanian",
       "name": "Sasanian Persian Empire",
-      "startTime": { "year": 224, "era": "CE" },
+      "startTime": { "value": 224, "unit": "ce" },
       "endTime": "0651-01-01",
       "info": "The last pre-Islamic Persian empire, reviving Achaemenid traditions. The Sasanians are Rome/Byzantium's main rival for four centuries, developing sophisticated art, architecture, and Zoroastrian religious institutions. Falls to the Arab Muslim conquest in the 7th century."
     },
     {
       "id": "period-gupta",
       "name": "Gupta Empire",
-      "startTime": { "year": 320, "era": "CE" },
-      "endTime": { "year": 550, "era": "CE" },
+      "startTime": { "value": 320, "unit": "ce" },
+      "endTime": { "value": 550, "unit": "ce" },
       "info": "India's 'Golden Age,' marked by advances in science, mathematics (including the concept of zero), astronomy, literature, and art. The Gupta period sees the flourishing of classical Hindu culture, Sanskrit literature, and the Ajanta cave paintings."
     },
     {
@@ -749,57 +749,57 @@
     {
       "id": "period-maya",
       "name": "Maya Civilization",
-      "startTime": { "year": 2000, "era": "BCE" },
+      "startTime": { "value": 2000, "unit": "bce" },
       "endTime": "1697-03-13",
       "info": "A Mesoamerican civilization known for advanced writing, astronomy, mathematics (including zero), and monumental architecture. Maya city-states flourish in the Classic period, then largely collapse in the southern lowlands around 900 CE. Northern Maya continue until Spanish conquest."
     },
     {
       "id": "period-poverty-point",
       "name": "Poverty Point Culture",
-      "startTime": { "year": 1700, "era": "BCE" },
-      "endTime": { "year": 1100, "era": "BCE" },
+      "startTime": { "value": 1700, "unit": "bce" },
+      "endTime": { "value": 1100, "unit": "bce" },
       "info": "A Late Archaic archaeological culture in the lower Mississippi Valley, centered on the massive earthwork complex at Poverty Point, Louisiana. Hunter-gatherers built enormous mound complexes and participated in trade networks spanning much of eastern North America, obtaining copper, soapstone, and other materials from distant sources."
     },
     {
       "id": "period-hopewell",
       "name": "Hopewell Culture",
-      "startTime": { "year": 200, "era": "BCE" },
-      "endTime": { "year": 500, "era": "CE" },
+      "startTime": { "value": 200, "unit": "bce" },
+      "endTime": { "value": 500, "unit": "ce" },
       "info": "A Native American culture flourishing in the Eastern Woodlands, known for elaborate burial mounds, extensive trade networks (the 'Hopewell Interaction Sphere'), and sophisticated artwork. Hopewell peoples traded obsidian from Yellowstone, copper from the Great Lakes, shells from the Gulf, and mica from the Appalachians."
     },
     {
       "id": "period-teotihuacan",
       "name": "Teotihuacan",
-      "startTime": { "year": 100, "era": "BCE" },
-      "endTime": { "year": 550, "era": "CE" },
+      "startTime": { "value": 100, "unit": "bce" },
+      "endTime": { "value": 550, "unit": "ce" },
       "info": "A major Mesoamerican city that became one of the largest in the ancient world, with a population of 125,000-200,000 at its peak. Famous for the Pyramid of the Sun, Pyramid of the Moon, and the Avenue of the Dead. Its influence extended throughout Mesoamerica, but its ethnic identity and the cause of its collapse remain mysterious."
     },
     {
       "id": "period-mississippian",
       "name": "Mississippian Culture",
-      "startTime": { "year": 800, "era": "CE" },
-      "endTime": { "year": 1600, "era": "CE" },
+      "startTime": { "value": 800, "unit": "ce" },
+      "endTime": { "value": 1600, "unit": "ce" },
       "info": "A mound-building Native American civilization of the Midwestern, Eastern, and Southeastern United States. Centered on maize agriculture and characterized by large earthen platform mounds, shell-tempered pottery, and chiefdom-level political organization. Cahokia, near modern St. Louis, was its largest city."
     },
     {
       "id": "period-cahokia",
       "name": "Cahokia",
-      "startTime": { "year": 1050, "era": "CE" },
-      "endTime": { "year": 1350, "era": "CE" },
+      "startTime": { "value": 1050, "unit": "ce" },
+      "endTime": { "value": 1350, "unit": "ce" },
       "info": "The largest pre-Columbian settlement north of Mexico, located near present-day St. Louis. At its peak around 1100 CE, Cahokia had a population of 10,000-20,000, with Monks Mound being the largest earthen structure in the Americas. The city declined and was abandoned before European contact for reasons still debated."
     },
     {
       "id": "period-northwest-coast",
       "name": "Northwest Coast Cultures",
-      "startTime": { "year": 1500, "era": "BCE" },
-      "endTime": { "year": 1900, "era": "CE" },
+      "startTime": { "value": 1500, "unit": "bce" },
+      "endTime": { "value": 1900, "unit": "ce" },
       "info": "Complex hunter-gatherer societies along the Pacific coast from Alaska to northern California, including the Haida, Tlingit, Kwakwaka'wakw, and others. Known for elaborate woodworking (totem poles, canoes), potlatch ceremonies, social stratification including slavery, and artistic traditions. Rich marine resources supported dense, sedentary populations without agriculture."
     },
     {
       "id": "period-wendat",
       "name": "Wendat (Huron) Confederacy",
-      "startTime": { "year": 1400, "era": "CE" },
-      "endTime": { "year": 1650, "era": "CE" },
+      "startTime": { "value": 1400, "unit": "ce" },
+      "endTime": { "value": 1650, "unit": "ce" },
       "info": "A confederacy of Iroquoian-speaking peoples in the Great Lakes region, primarily in present-day Ontario. The Wendat were major agricultural producers and traders, acting as middlemen in the fur trade. Their confederacy was destroyed by warfare with the Haudenosaunee (Iroquois) Confederacy in the 1640s-1650s."
     },
     {
@@ -847,15 +847,15 @@
     {
       "id": "period-ghana",
       "name": "Ghana Empire",
-      "startTime": { "year": 300, "era": "CE" },
-      "endTime": { "year": 1200, "era": "CE" },
+      "startTime": { "value": 300, "unit": "ce" },
+      "endTime": { "value": 1200, "unit": "ce" },
       "info": "The first major West African empire, controlling trans-Saharan gold and salt trade. Not related to modern Ghana, it was located in present-day Mauritania and Mali. Ghana's wealth inspires later empires including Mali and Songhai."
     },
     {
       "id": "period-mali",
       "name": "Mali Empire",
-      "startTime": { "year": 1235, "era": "CE" },
-      "endTime": { "year": 1600, "era": "CE" },
+      "startTime": { "value": 1235, "unit": "ce" },
+      "endTime": { "value": 1600, "unit": "ce" },
       "info": "A West African empire that succeeds Ghana, controlling gold and salt trade. Under Mansa Musa, Mali becomes fabulously wealthy; his pilgrimage to Mecca reportedly crashes gold prices in Egypt. Timbuktu becomes a center of Islamic learning."
     },
     {
@@ -938,8 +938,8 @@
     {
       "id": "period-merina",
       "name": "Merina Kingdom",
-      "startTime": { "year": 1540, "era": "CE" },
-      "endTime": { "year": 1897, "era": "CE" },
+      "startTime": { "value": 1540, "unit": "ce" },
+      "endTime": { "value": 1897, "unit": "ce" },
       "info": "The dominant kingdom of Madagascar, founded in the central highlands. Under rulers like Andrianampoinimerina and Radama I, the Merina unified much of Madagascar, developed a written language using Latin script, established diplomatic relations with Britain, and modernized their military. The kingdom was annexed by France in 1897 after resisting colonization."
     }
   ],

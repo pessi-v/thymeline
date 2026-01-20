@@ -16,15 +16,19 @@ import type {
   ViewportState,
   LaneAssignment,
 } from "../core/types";
-import {
-  normalizeTime,
-  normalizeEndTime,
-  getCurrentTime,
-} from "../utils/timeNormalization";
+import { getCurrentTime } from "../utils/timeNormalization";
 import { assignLanes } from "../layout/laneAssignment";
 import { BIG_BANG_TIME } from "../utils/validation";
 import { CONNECTOR_RENDERERS, DEFAULT_CONNECTOR } from "./connectors";
 import { InfoPopup } from "./InfoPopup";
+import {
+  createSvgElement,
+  createTextElement,
+  createLineElement,
+  createRectElement,
+  createCircleElement,
+} from "./svgFactory";
+import { Viewport } from "./Viewport";
 
 /**
  * Bounds for an event's circle and potential label positions
@@ -65,7 +69,7 @@ export class TimelineRenderer {
   private svg: SVGSVGElement | null = null;
   private data: TimelineData | null = null;
   private options: Required<RendererOptions>;
-  private viewport: ViewportState;
+  private viewport: Viewport;
   private eventListeners: Map<string, Set<Function>> = new Map();
   private laneAssignments: import("../core/types").LaneAssignment[] = [];
   private rowMapping: Map<string, number> = new Map();
@@ -108,14 +112,13 @@ export class TimelineRenderer {
     };
 
     // Initialize viewport
-    this.viewport = {
-      startTime: normalizeTime(this.options.initialStartTime),
-      endTime: normalizeTime(this.options.initialEndTime),
-      zoomLevel: 1,
-      centerTime: 0,
-    };
-    this.viewport.centerTime =
-      (this.viewport.startTime + this.viewport.endTime) / 2;
+    this.viewport = new Viewport({
+      width: this.options.width,
+      minZoom: this.options.minZoom,
+      maxZoom: this.options.maxZoom,
+      initialStartTime: this.options.initialStartTime,
+      initialEndTime: this.options.initialEndTime,
+    });
   }
 
   /**
@@ -124,14 +127,9 @@ export class TimelineRenderer {
   render(timelineData: TimelineData): void {
     this.data = timelineData;
 
-    // Calculate the full time range of all data
-    const { minTime, maxTime } = this.calculateDataTimeRange(timelineData);
-
-    // Update viewport to show full range initially
-    this.viewport.startTime = minTime;
-    this.viewport.endTime = maxTime;
-    this.viewport.centerTime = (minTime + maxTime) / 2;
-    this.viewport.zoomLevel = 1;
+    // Update viewport with data and fit to show all
+    this.viewport.setData(timelineData);
+    this.viewport.fitToData();
 
     // Assign lanes using the selected period layout algorithm
     const assignments = assignLanes(
@@ -166,103 +164,31 @@ export class TimelineRenderer {
   }
 
   zoomTo(startTime: TimeInput, endTime: TimeInput): void {
-    this.viewport.startTime = normalizeTime(startTime);
-    this.viewport.endTime = normalizeTime(endTime);
-    this.viewport.centerTime =
-      (this.viewport.startTime + this.viewport.endTime) / 2;
-    // Reset zoom level to 1 when explicitly setting time range
-    this.viewport.zoomLevel = 1;
+    this.viewport.zoomTo(startTime, endTime);
     this.updateView();
   }
 
   setZoomLevel(level: number, centerTime?: number): void {
     if (!this.data) return;
 
-    const oldZoomLevel = this.viewport.zoomLevel;
-    const oldRange = this.viewport.endTime - this.viewport.startTime;
-
-    // If centerTime is provided, use it; otherwise keep current center
-    const targetCenter =
-      centerTime !== undefined ? centerTime : this.viewport.centerTime;
-
-    // Calculate the maximum zoom out level (showing all data)
-    const { minTime, maxTime } = this.calculateDataTimeRange(this.data);
-    const fullDataRange = maxTime - minTime;
-
-    // Calculate the minimum zoom level that shows all data
-    const currentViewRange = this.viewport.endTime - this.viewport.startTime;
-    const dynamicMinZoom = Math.min(
-      this.options.minZoom,
-      oldZoomLevel * (currentViewRange / fullDataRange),
-    );
-
-    // Calculate the maximum zoom in level (shortest period occupies 10% of canvas)
-    const shortestPeriod = this.findShortestPeriod();
-    let dynamicMaxZoom = this.options.maxZoom;
-    if (shortestPeriod !== null) {
-      // We want shortest period to occupy 10% of canvas width
-      // timeRange = shortestPeriod / 0.1 = shortestPeriod * 10
-      const minTimeRange = shortestPeriod * 10;
-      // maxZoomLevel = fullDataRange / minTimeRange
-      dynamicMaxZoom = Math.min(
-        this.options.maxZoom,
-        fullDataRange / minTimeRange,
-      );
+    const changed = this.viewport.setZoomLevel(level, centerTime);
+    if (changed) {
+      this.updateView();
+      this.emit("zoom", this.viewport.zoomLevel);
     }
-
-    // Clamp the new zoom level
-    const newZoomLevel = Math.max(
-      dynamicMinZoom,
-      Math.min(dynamicMaxZoom, level),
-    );
-
-    // If zoom level didn't change (hit limits), don't update
-    if (newZoomLevel === oldZoomLevel) {
-      return;
-    }
-
-    this.viewport.zoomLevel = newZoomLevel;
-
-    // Adjust time range based on zoom level change (inverse relationship)
-    // Higher zoom = smaller range (more zoomed in)
-    let newRange = oldRange * (oldZoomLevel / newZoomLevel);
-
-    // Ensure we don't zoom out beyond the full data range
-    newRange = Math.min(newRange, fullDataRange * 1.05); // 5% padding
-
-    // Center on target time and update viewport bounds first
-    this.viewport.centerTime = targetCenter;
-    this.viewport.startTime = targetCenter - newRange / 2;
-    this.viewport.endTime = targetCenter + newRange / 2;
-
-    // Now apply pan limits with the new time range
-    this.clampPanPosition();
-    // Recalculate bounds after clamping (centerTime may have changed)
-    const timeRange = this.viewport.endTime - this.viewport.startTime;
-    this.viewport.startTime = this.viewport.centerTime - timeRange / 2;
-    this.viewport.endTime = this.viewport.centerTime + timeRange / 2;
-
-    this.updateView();
-    this.emit("zoom", this.viewport.zoomLevel);
   }
 
   /**
    * Pan controls
    */
   panTo(centerTime: TimeInput): void {
-    this.viewport.centerTime = normalizeTime(centerTime);
-    this.clampPanPosition();
-    this.recalculateViewportBounds();
+    this.viewport.panTo(centerTime);
     this.updateView();
     this.emit("pan", this.viewport.centerTime);
   }
 
   panBy(deltaPixels: number): void {
-    const timeRange = this.viewport.endTime - this.viewport.startTime;
-    const deltaTime = (deltaPixels / this.options.width) * timeRange;
-    this.viewport.centerTime += deltaTime;
-    this.clampPanPosition();
-    this.recalculateViewportBounds();
+    this.viewport.panBy(deltaPixels);
     this.updateView();
     this.emit("pan", this.viewport.centerTime);
   }
@@ -351,7 +277,7 @@ export class TimelineRenderer {
    * Get current viewport state (for debugging)
    */
   getViewport(): Readonly<ViewportState> {
-    return { ...this.viewport };
+    return this.viewport.getState();
   }
 
   /**
@@ -376,9 +302,6 @@ export class TimelineRenderer {
       this.svg.remove();
     }
 
-    this.svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    this.svg.setAttribute("width", this.options.width.toString());
-
     // Calculate height based on actual number of rows used
     // Layout from top: unrelated events lane, sub-lane -1, periods with sub-lanes 0/1
     const numRows =
@@ -400,7 +323,10 @@ export class TimelineRenderer {
       bottomPadding;
     const height = Math.max(this.options.height, calculatedHeight);
 
-    this.svg.setAttribute("height", height.toString());
+    this.svg = createSvgElement("svg", {
+      width: this.options.width,
+      height,
+    });
     this.svg.style.border = "1px solid #ccc";
     this.svg.style.background = "#fff";
     this.svg.style.cursor = "grab";
@@ -455,10 +381,9 @@ export class TimelineRenderer {
       const deltaX = e.clientX - startX;
       const timeRange = this.viewport.endTime - this.viewport.startTime;
       const deltaTime = (-deltaX / this.options.width) * timeRange;
+      const newCenterTime = startCenterTime + deltaTime;
 
-      this.viewport.centerTime = startCenterTime + deltaTime;
-      this.clampPanPosition();
-      this.recalculateViewportBounds();
+      this.viewport.panTo(newCenterTime);
       this.updateView();
       this.emit("pan", this.viewport.centerTime);
     });
@@ -482,7 +407,7 @@ export class TimelineRenderer {
       const cursorX = e.clientX - rect.left;
 
       // Convert pixel position to time
-      const cursorTime = this.xToTime(cursorX);
+      const cursorTime = this.viewport.xToTime(cursorX);
 
       // Calculate zoom factor proportional to scroll delta
       const sensitivity = 0.001;
@@ -508,20 +433,11 @@ export class TimelineRenderer {
     const clickX = e.clientX - rect.left;
 
     // Convert pixel position to time
-    const clickedTime = this.xToTime(clickX);
+    const clickedTime = this.viewport.xToTime(clickX);
 
     // Zoom in one level, centered on the clicked time
     const newZoomLevel = this.viewport.zoomLevel * 1.5;
     this.setZoomLevel(newZoomLevel, clickedTime);
-  }
-
-  /**
-   * Convert pixel position to time
-   */
-  private xToTime(x: number): number {
-    const timeRange = this.viewport.endTime - this.viewport.startTime;
-    const timeProgress = x / this.options.width;
-    return this.viewport.startTime + timeRange * timeProgress;
   }
 
   private updateView(): void {
@@ -538,140 +454,10 @@ export class TimelineRenderer {
   }
 
   /**
-   * Calculate the time range that encompasses all data
-   */
-  private calculateDataTimeRange(data: TimelineData): {
-    minTime: number;
-    maxTime: number;
-  } {
-    let minTime = Infinity;
-    let maxTime = -Infinity;
-
-    // Check all events
-    for (const event of data.events) {
-      const time = normalizeTime(event.time);
-      minTime = Math.min(minTime, time);
-      maxTime = Math.max(maxTime, time);
-    }
-
-    // Check all periods
-    // For ongoing periods (undefined endTime), use current time for display bounds
-    for (const period of data.periods) {
-      const startTime = normalizeTime(period.startTime);
-      const endTime = normalizeEndTime(period.endTime, false); // false = use current time, not Infinity
-      minTime = Math.min(minTime, startTime);
-      maxTime = Math.max(maxTime, endTime);
-    }
-
-    // If no data, use default range
-    if (minTime === Infinity || maxTime === -Infinity) {
-      minTime = normalizeTime(this.options.initialStartTime);
-      maxTime = normalizeTime(this.options.initialEndTime);
-    }
-
-    // Add a small padding (2.5% on each side)
-    const range = maxTime - minTime;
-    const padding = range * 0.025;
-
-    return {
-      minTime: minTime - padding,
-      maxTime: maxTime + padding,
-    };
-  }
-
-  /**
-   * Find the shortest period duration in the data
-   * Skips ongoing periods (those without endTime)
-   */
-  private findShortestPeriod(): number | null {
-    if (!this.data || this.data.periods.length === 0) {
-      return null;
-    }
-
-    let shortestDuration = Infinity;
-
-    for (const period of this.data.periods) {
-      // Skip ongoing periods (undefined endTime)
-      if (period.endTime === undefined || period.endTime === null) {
-        continue;
-      }
-
-      const startTime = normalizeTime(period.startTime);
-      const endTime = normalizeTime(period.endTime);
-      const duration = endTime - startTime;
-
-      if (duration > 0) {
-        shortestDuration = Math.min(shortestDuration, duration);
-      }
-    }
-
-    return shortestDuration === Infinity ? null : shortestDuration;
-  }
-
-  /**
-   * Clamp pan position to prevent excessive empty space (15% max on each side)
-   */
-  private clampPanPosition(): void {
-    if (!this.data) return;
-
-    // Get the actual data bounds (without padding)
-    let minTime = Infinity;
-    let maxTime = -Infinity;
-
-    for (const event of this.data.events) {
-      const time = normalizeTime(event.time);
-      minTime = Math.min(minTime, time);
-      maxTime = Math.max(maxTime, time);
-    }
-
-    for (const period of this.data.periods) {
-      const startTime = normalizeTime(period.startTime);
-      // For ongoing periods, use current time for pan bounds
-      const endTime = normalizeEndTime(period.endTime, false); // false = use current time, not Infinity
-      minTime = Math.min(minTime, startTime);
-      maxTime = Math.max(maxTime, endTime);
-    }
-
-    if (minTime === Infinity || maxTime === -Infinity) {
-      return; // No data to constrain
-    }
-
-    const timeRange = this.viewport.endTime - this.viewport.startTime;
-
-    // Calculate the maximum allowed empty space in time units
-    // This is 15% of the viewport range (which represents 15% of canvas width)
-    const maxEmptySpaceTime = timeRange * 0.15;
-
-    // Calculate min and max allowed center times
-    // Left limit: viewport.startTime should not be less than (minTime - maxEmptySpaceTime)
-    const minCenterTime = minTime - maxEmptySpaceTime + timeRange / 2;
-
-    // Right limit: viewport.endTime should not be more than (maxTime + maxEmptySpaceTime)
-    const maxCenterTime = maxTime + maxEmptySpaceTime - timeRange / 2;
-
-    // Clamp the center time
-    this.viewport.centerTime = Math.max(
-      minCenterTime,
-      Math.min(maxCenterTime, this.viewport.centerTime),
-    );
-  }
-
-  /**
-   * Recalculate viewport start/end times based on center and current range
-   */
-  private recalculateViewportBounds(): void {
-    const timeRange = this.viewport.endTime - this.viewport.startTime;
-    this.viewport.startTime = this.viewport.centerTime - timeRange / 2;
-    this.viewport.endTime = this.viewport.centerTime + timeRange / 2;
-  }
-
-  /**
    * Convert normalized time to pixel position
    */
   private timeToX(time: number): number {
-    const timeRange = this.viewport.endTime - this.viewport.startTime;
-    const pixelPerYear = this.options.width / timeRange;
-    return (time - this.viewport.startTime) * pixelPerYear;
+    return this.viewport.timeToX(time);
   }
 
   /**
@@ -857,31 +643,21 @@ export class TimelineRenderer {
       const y = this.rowToY(row, isEventRow ? "event" : "period");
 
       // Row number background
-      const rect = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "rect",
-      );
-      rect.setAttribute("x", "0");
-      rect.setAttribute("y", y.toString());
-      rect.setAttribute("width", "30");
-      rect.setAttribute("height", periodHeight.toString());
-      rect.setAttribute("fill", "#f0f0f0");
-      rect.setAttribute("stroke", "#ccc");
-      rect.setAttribute("stroke-width", "0.5");
+      const rect = createRectElement(0, y, 30, periodHeight, {
+        fill: "#f0f0f0",
+        stroke: "#ccc",
+        "stroke-width": 0.5,
+      });
       this.svg.appendChild(rect);
 
       // Row number text
-      const text = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "text",
-      );
-      text.setAttribute("x", "15");
-      text.setAttribute("y", (y + periodHeight / 2 + 4).toString());
-      text.setAttribute("text-anchor", "middle");
-      text.setAttribute("font-size", "10");
-      text.setAttribute("fill", "#666");
-      text.setAttribute("font-family", "monospace");
-      text.textContent = row.toString();
+      const text = createTextElement(row.toString(), {
+        x: 15,
+        y: y + periodHeight / 2 + 4,
+        "text-anchor": "middle",
+        "font-size": 10,
+        "font-family": "monospace",
+      });
       this.svg.appendChild(text);
     }
   }
@@ -893,26 +669,19 @@ export class TimelineRenderer {
     if (!this.svg) return;
 
     // Background
-    const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    bg.setAttribute("id", "time-axis-background");
-    bg.setAttribute("x", "0");
-    bg.setAttribute("y", "0");
-    bg.setAttribute("width", this.options.width.toString());
-    bg.setAttribute("height", "40");
-    bg.setAttribute("fill", "#f8f9fa");
+    const bg = createRectElement(0, 0, this.options.width, 40, {
+      id: "time-axis-background",
+      fill: "#f8f9fa",
+    });
     this.svg.appendChild(bg);
 
     // Render Big Bang boundary if visible
     this.renderBigBangBoundary();
 
     // Axis line
-    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute("x1", "0");
-    line.setAttribute("y1", "40");
-    line.setAttribute("x2", this.options.width.toString());
-    line.setAttribute("y2", "40");
-    line.setAttribute("stroke", "#666");
-    line.setAttribute("stroke-width", "2");
+    const line = createLineElement(0, 40, this.options.width, 40, {
+      "stroke-width": 2,
+    });
     this.svg.appendChild(line);
 
     // Calculate tick positions with margin from edges
@@ -931,30 +700,16 @@ export class TimelineRenderer {
       const time = this.viewport.startTime + timeRange * timeProgress;
 
       // Tick mark
-      const tick = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "line",
-      );
-      tick.setAttribute("x1", pixelPosition.toString());
-      tick.setAttribute("y1", "40");
-      tick.setAttribute("x2", pixelPosition.toString());
-      tick.setAttribute("y2", "50");
-      tick.setAttribute("stroke", "#666");
-      tick.setAttribute("stroke-width", "1");
+      const tick = createLineElement(pixelPosition, 40, pixelPosition, 50);
       this.svg.appendChild(tick);
 
       // Label (only if time is after Big Bang)
       if (time >= BIG_BANG_TIME) {
-        const text = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "text",
-        );
-        text.setAttribute("x", pixelPosition.toString());
-        text.setAttribute("y", "25");
-        text.setAttribute("text-anchor", "middle");
-        text.setAttribute("font-size", "11");
-        text.setAttribute("fill", "#666");
-        text.textContent = this.formatTimeLabel(time);
+        const text = createTextElement(this.formatTimeLabel(time), {
+          x: pixelPosition,
+          y: 25,
+          "text-anchor": "middle",
+        });
         this.svg.appendChild(text);
       }
     }
@@ -980,7 +735,7 @@ export class TimelineRenderer {
     const patternId = "static-noise-pattern";
     let defs = this.svg.querySelector("defs");
     if (!defs) {
-      defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+      defs = createSvgElement("defs");
       this.svg.insertBefore(defs, this.svg.firstChild);
     }
 
@@ -991,35 +746,26 @@ export class TimelineRenderer {
     }
 
     // Create noise pattern using SVG filter
-    const filter = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "filter",
-    );
-    filter.setAttribute("id", "noise-filter");
-    filter.setAttribute("x", "0");
-    filter.setAttribute("y", "0");
-    filter.setAttribute("width", "100%");
-    filter.setAttribute("height", "100%");
+    const filter = createSvgElement("filter", {
+      id: "noise-filter",
+      x: 0,
+      y: 0,
+      width: "100%",
+      height: "100%",
+    });
 
-    const turbulence = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "feTurbulence",
-    );
-    turbulence.setAttribute("type", "fractalNoise");
-    turbulence.setAttribute("baseFrequency", "2.5");
-    turbulence.setAttribute("numOctaves", "5");
-    turbulence.setAttribute("result", "noise");
+    const turbulence = createSvgElement("feTurbulence", {
+      type: "fractalNoise",
+      baseFrequency: 2.5,
+      numOctaves: 5,
+      result: "noise",
+    });
 
-    const colorMatrix = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "feColorMatrix",
-    );
-    colorMatrix.setAttribute("in", "noise");
-    colorMatrix.setAttribute("type", "matrix");
-    colorMatrix.setAttribute(
-      "values",
-      "0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 1 0",
-    );
+    const colorMatrix = createSvgElement("feColorMatrix", {
+      in: "noise",
+      type: "matrix",
+      values: "0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 1 0",
+    });
 
     filter.appendChild(turbulence);
     filter.appendChild(colorMatrix);
@@ -1027,45 +773,29 @@ export class TimelineRenderer {
 
     // Render the noisy region (before Big Bang)
     if (bigBangX > 0) {
-      const noiseRect = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "rect",
-      );
-      noiseRect.setAttribute("x", "0");
-      noiseRect.setAttribute("y", "40");
-      noiseRect.setAttribute("width", bigBangX.toString());
-      noiseRect.setAttribute("height", (svgHeight - 40).toString());
-      noiseRect.setAttribute("fill", "#d0d0d0");
-      noiseRect.setAttribute("filter", "url(#noise-filter)");
-      noiseRect.setAttribute("opacity", "0.35");
+      const noiseRect = createRectElement(0, 40, bigBangX, svgHeight - 40, {
+        fill: "#d0d0d0",
+        filter: "url(#noise-filter)",
+        opacity: 0.35,
+      });
       this.svg.appendChild(noiseRect);
 
       // Draw vertical line at Big Bang (dashed and thicker)
-      const bigBangLine = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "line",
-      );
-      bigBangLine.setAttribute("x1", bigBangX.toString());
-      bigBangLine.setAttribute("y1", "40");
-      bigBangLine.setAttribute("x2", bigBangX.toString());
-      bigBangLine.setAttribute("y2", svgHeight.toString());
-      bigBangLine.setAttribute("stroke", "#333");
-      bigBangLine.setAttribute("stroke-width", "2");
-      bigBangLine.setAttribute("stroke-dasharray", "5,5");
+      const bigBangLine = createLineElement(bigBangX, 40, bigBangX, svgHeight, {
+        stroke: "#333",
+        "stroke-width": 2,
+        "stroke-dasharray": "5,5",
+      });
       this.svg.appendChild(bigBangLine);
 
       // Add label for Big Bang
-      const label = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "text",
-      );
-      label.setAttribute("x", (bigBangX - 5).toString());
-      label.setAttribute("y", "55");
-      label.setAttribute("text-anchor", "end");
-      label.setAttribute("font-size", "10");
-      label.setAttribute("fill", "#666");
-      label.setAttribute("font-style", "italic");
-      label.textContent = "Big Bang";
+      const label = createTextElement("Big Bang", {
+        x: bigBangX - 5,
+        y: 55,
+        "text-anchor": "end",
+        "font-size": 10,
+        "font-style": "italic",
+      });
       this.svg.appendChild(label);
     }
   }
@@ -1088,31 +818,21 @@ export class TimelineRenderer {
     const svgHeight = parseFloat(this.svg.getAttribute("height") || "500");
 
     // Draw vertical line at today (dashed)
-    const todayLine = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "line",
-    );
-    todayLine.setAttribute("x1", todayX.toString());
-    todayLine.setAttribute("y1", "40");
-    todayLine.setAttribute("x2", todayX.toString());
-    todayLine.setAttribute("y2", svgHeight.toString());
-    todayLine.setAttribute("stroke", "#333");
-    todayLine.setAttribute("stroke-width", "2");
-    todayLine.setAttribute("stroke-dasharray", "5,5");
+    const todayLine = createLineElement(todayX, 40, todayX, svgHeight, {
+      stroke: "#333",
+      "stroke-width": 2,
+      "stroke-dasharray": "5,5",
+    });
     this.svg.appendChild(todayLine);
 
     // Add label for Today
-    const label = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "text",
-    );
-    label.setAttribute("x", (todayX + 5).toString());
-    label.setAttribute("y", "55");
-    label.setAttribute("text-anchor", "start");
-    label.setAttribute("font-size", "10");
-    label.setAttribute("fill", "#666");
-    label.setAttribute("font-style", "italic");
-    label.textContent = "Today";
+    const label = createTextElement("Today", {
+      x: todayX + 5,
+      y: 55,
+      "text-anchor": "start",
+      "font-size": 10,
+      "font-style": "italic",
+    });
     this.svg.appendChild(label);
   }
 
@@ -1154,13 +874,15 @@ export class TimelineRenderer {
         month: "long",
         day: "numeric",
       });
-    } else if ("era" in time) {
-      return `${time.year} ${time.era}`;
     } else if ("unit" in time) {
       if (time.unit === "mya") {
         return `${time.value} million years ago`;
-      } else {
+      } else if (time.unit === "years-ago") {
         return `${time.value} years ago`;
+      } else if (time.unit === "bce") {
+        return `${time.value} BCE`;
+      } else if (time.unit === "ce") {
+        return `${time.value} CE`;
       }
     } else if ("localTime" in time) {
       return `${time.localTime} (${time.timezone})`;
@@ -1190,18 +912,15 @@ export class TimelineRenderer {
     const height = this.options.constraints.periodHeight;
 
     // Period rectangle with fully rounded ends
-    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    rect.setAttribute("id", period.id);
-    rect.setAttribute("x", startX.toString());
-    rect.setAttribute("y", y.toString());
-    rect.setAttribute("width", width.toString());
-    rect.setAttribute("height", height.toString());
-    rect.setAttribute("fill", "#000");
-    rect.setAttribute("fill-opacity", "1");
-    rect.setAttribute("stroke", "#000");
-    rect.setAttribute("stroke-width", "1");
-    rect.setAttribute("rx", (5).toString());
-    rect.setAttribute("ry", (height * 0.35).toString());
+    const rect = createRectElement(startX, y, width, height, {
+      id: period.id,
+      fill: "#000",
+      "fill-opacity": 1,
+      stroke: "#000",
+      "stroke-width": 1,
+      rx: 5,
+      ry: height * 0.35,
+    });
 
     // Add click handler for info popup
     rect.style.cursor = "pointer";
@@ -1239,18 +958,14 @@ export class TimelineRenderer {
       rect.addEventListener("mouseenter", () => {
         if (!this.svg) return;
 
-        hoverLabel = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "text",
-        );
-        hoverLabel.setAttribute("x", (startX + width / 2).toString());
-        hoverLabel.setAttribute("y", (y + height + 14).toString());
-        hoverLabel.setAttribute("text-anchor", "middle");
-        hoverLabel.setAttribute("font-size", "11");
-        hoverLabel.setAttribute("fill", "#000");
-        hoverLabel.setAttribute("font-weight", "bold");
-        hoverLabel.setAttribute("pointer-events", "none");
-        hoverLabel.textContent = period.name;
+        hoverLabel = createTextElement(period.name, {
+          x: startX + width / 2,
+          y: y + height + 14,
+          "text-anchor": "middle",
+          fill: "#000",
+          "font-weight": "bold",
+          "pointer-events": "none",
+        });
         this.svg.appendChild(hoverLabel);
       });
 
@@ -1287,13 +1002,12 @@ export class TimelineRenderer {
 
     // Create a temporary text element to measure text width
     const measureText = (str: string): number => {
-      const temp = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "text",
-      );
-      temp.setAttribute("font-size", fontSize.toString());
-      temp.setAttribute("font-weight", "bold");
-      temp.textContent = str;
+      const temp = createTextElement(str, {
+        x: 0,
+        y: 0,
+        "font-size": fontSize,
+        "font-weight": "bold",
+      });
       this.svg!.appendChild(temp);
       const bbox = temp.getBBox();
       temp.remove();
@@ -1305,18 +1019,15 @@ export class TimelineRenderer {
 
     if (singleLineWidth <= availableWidth) {
       // Single line fits
-      const text = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "text",
-      );
-      text.setAttribute("x", centerX.toString());
-      text.setAttribute("y", (y + height / 2 + fontSize / 3).toString());
-      text.setAttribute("text-anchor", "middle");
-      text.setAttribute("font-size", fontSize.toString());
-      text.setAttribute("fill", "#fff");
-      text.setAttribute("font-weight", "bold");
-      text.setAttribute("pointer-events", "none");
-      text.textContent = name;
+      const text = createTextElement(name, {
+        x: centerX,
+        y: y + height / 2 + fontSize / 3,
+        "text-anchor": "middle",
+        "font-size": fontSize,
+        fill: "#fff",
+        "font-weight": "bold",
+        "pointer-events": "none",
+      });
       this.svg.appendChild(text);
       return true;
     }
@@ -1353,38 +1064,26 @@ export class TimelineRenderer {
     const line2 = words.slice(bestSplit).join(" ");
 
     // Render two lines
-    const text1 = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "text",
-    );
-    text1.setAttribute("x", centerX.toString());
-    text1.setAttribute(
-      "y",
-      (y + height / 2 - lineHeight / 2 + fontSize / 3).toString(),
-    );
-    text1.setAttribute("text-anchor", "middle");
-    text1.setAttribute("font-size", fontSize.toString());
-    text1.setAttribute("fill", "#fff");
-    text1.setAttribute("font-weight", "bold");
-    text1.setAttribute("pointer-events", "none");
-    text1.textContent = line1;
+    const text1 = createTextElement(line1, {
+      x: centerX,
+      y: y + height / 2 - lineHeight / 2 + fontSize / 3,
+      "text-anchor": "middle",
+      "font-size": fontSize,
+      fill: "#fff",
+      "font-weight": "bold",
+      "pointer-events": "none",
+    });
     this.svg.appendChild(text1);
 
-    const text2 = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "text",
-    );
-    text2.setAttribute("x", centerX.toString());
-    text2.setAttribute(
-      "y",
-      (y + height / 2 + lineHeight / 2 + fontSize / 3).toString(),
-    );
-    text2.setAttribute("text-anchor", "middle");
-    text2.setAttribute("font-size", fontSize.toString());
-    text2.setAttribute("fill", "#fff");
-    text2.setAttribute("font-weight", "bold");
-    text2.setAttribute("pointer-events", "none");
-    text2.textContent = line2;
+    const text2 = createTextElement(line2, {
+      x: centerX,
+      y: y + height / 2 + lineHeight / 2 + fontSize / 3,
+      "text-anchor": "middle",
+      "font-size": fontSize,
+      fill: "#fff",
+      "font-weight": "bold",
+      "pointer-events": "none",
+    });
     this.svg.appendChild(text2);
 
     return true;
@@ -1882,17 +1581,12 @@ export class TimelineRenderer {
     const y = this.eventToY(row, subLane, isRelatedEvent);
 
     // Event marker (hollow circle, smaller)
-    const circle = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "circle",
-    );
-    circle.setAttribute("id", event.id);
-    circle.setAttribute("cx", x.toString());
-    circle.setAttribute("cy", (y + height / 2).toString());
-    circle.setAttribute("r", "4");
-    circle.setAttribute("fill", "none");
-    circle.setAttribute("stroke", "#000");
-    circle.setAttribute("stroke-width", "2");
+    const circle = createCircleElement(x, y + height / 2, 4, {
+      id: event.id,
+      fill: "none",
+      stroke: "#000",
+      "stroke-width": 2,
+    });
 
     // Add click handler for info popup
     circle.style.cursor = "pointer";
@@ -1913,24 +1607,14 @@ export class TimelineRenderer {
 
     // Label (only if not hidden)
     if (labelPosition !== "hidden") {
-      const text = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "text",
-      );
-
-      if (labelPosition === "right") {
-        text.setAttribute("x", (x + 8).toString());
-        text.setAttribute("text-anchor", "start");
-      } else {
-        text.setAttribute("x", (x - 8).toString());
-        text.setAttribute("text-anchor", "end");
-      }
-
-      text.setAttribute("y", (y + height / 2 + 4).toString());
-      text.setAttribute("font-size", "10");
-      text.setAttribute("fill", "#333");
-      text.setAttribute("pointer-events", "none");
-      text.textContent = event.name;
+      const text = createTextElement(event.name, {
+        x: labelPosition === "right" ? x + 8 : x - 8,
+        y: y + height / 2 + 4,
+        "text-anchor": labelPosition === "right" ? "start" : "end",
+        "font-size": 10,
+        fill: "#333",
+        "pointer-events": "none",
+      });
       this.svg.appendChild(text);
     }
   }

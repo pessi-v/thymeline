@@ -335,8 +335,8 @@
               width: config.width || containerWidth,
               height: config.height || 500,
               initialStartTime: config.initialStartTime || {
-                year: 100,
-                era: "BCE",
+                value: 100,
+                unit: "bce",
               },
               initialEndTime: config.initialEndTime || Temporal.Now.instant().toString(),
               theme: config.theme || "light",

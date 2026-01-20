@@ -8,8 +8,7 @@
 export type TimeInput =
   | string // ISO 8601 date string
   | Temporal.Instant // Temporal Instant for precise UTC timestamps
-  | { year: number; era: 'BCE' | 'CE' }
-  | { value: number; unit: 'mya' | 'years-ago' }
+  | { value: number; unit: 'mya' | 'years-ago' | 'bce' | 'ce' }
   | { localTime: string; timezone: string };
 
 /**
