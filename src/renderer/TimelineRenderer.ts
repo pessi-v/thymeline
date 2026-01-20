@@ -824,6 +824,9 @@ export class TimelineRenderer {
 
     // Render events with smart label positioning
     this.renderEventsWithLabelPositioning(this.data.events);
+
+    // Render today line marker
+    this.renderTodayLine();
   }
 
   /**
@@ -1065,6 +1068,52 @@ export class TimelineRenderer {
       label.textContent = "Big Bang";
       this.svg.appendChild(label);
     }
+  }
+
+  /**
+   * Render today line marker
+   */
+  private renderTodayLine(): void {
+    if (!this.svg) return;
+
+    const todayTime = getCurrentTime();
+    const todayX = this.timeToX(todayTime);
+
+    // Only render if today is visible in current viewport
+    if (todayX < 0 || todayX > this.options.width) {
+      return;
+    }
+
+    // Get SVG height
+    const svgHeight = parseFloat(this.svg.getAttribute("height") || "500");
+
+    // Draw vertical line at today (dashed)
+    const todayLine = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "line",
+    );
+    todayLine.setAttribute("x1", todayX.toString());
+    todayLine.setAttribute("y1", "40");
+    todayLine.setAttribute("x2", todayX.toString());
+    todayLine.setAttribute("y2", svgHeight.toString());
+    todayLine.setAttribute("stroke", "#333");
+    todayLine.setAttribute("stroke-width", "2");
+    todayLine.setAttribute("stroke-dasharray", "5,5");
+    this.svg.appendChild(todayLine);
+
+    // Add label for Today
+    const label = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "text",
+    );
+    label.setAttribute("x", (todayX + 5).toString());
+    label.setAttribute("y", "55");
+    label.setAttribute("text-anchor", "start");
+    label.setAttribute("font-size", "10");
+    label.setAttribute("fill", "#666");
+    label.setAttribute("font-style", "italic");
+    label.textContent = "Today";
+    this.svg.appendChild(label);
   }
 
   /**
