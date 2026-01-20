@@ -468,8 +468,9 @@ export class TimelineRenderer {
       // Convert pixel position to time
       const cursorTime = this.xToTime(cursorX);
 
-      // Calculate new zoom level
-      const zoomFactor = 1.5;
+      // Calculate zoom factor proportional to scroll delta
+      const sensitivity = 0.001;
+      const zoomFactor = 1 + Math.abs(e.deltaY) * sensitivity;
       const newZoomLevel =
         e.deltaY < 0
           ? this.viewport.zoomLevel * zoomFactor
@@ -738,7 +739,11 @@ export class TimelineRenderer {
    * @param subLane The sub-lane (0, 1, or 2) within the row's vertical space
    * @param isRelatedEvent Whether this event relates to a period
    */
-  private eventToY(row: number, subLane: number, isRelatedEvent: boolean): number {
+  private eventToY(
+    row: number,
+    subLane: number,
+    isRelatedEvent: boolean,
+  ): number {
     const periodHeight = this.options.constraints.periodHeight;
     const rowGap = this.options.constraints.laneGap;
     const timeAxisOffset = 60;
@@ -747,14 +752,16 @@ export class TimelineRenderer {
 
     if (isRelatedEvent) {
       // Related events are positioned in sub-lanes below their period
-      const periodY = timeAxisOffset + topSubLaneSpace + row * (periodHeight + rowGap);
+      const periodY =
+        timeAxisOffset + topSubLaneSpace + row * (periodHeight + rowGap);
       // Sub-lane 0 is just below period, sub-lane 1 is middle, sub-lane 2 is at bottom of gap
       return periodY + periodHeight + subLane * subLaneHeight;
     } else {
       // Unrelated events use the event section (after all periods)
       // Sub-lane is used to spread them vertically
       const eventHeight = 20;
-      const baseY = timeAxisOffset + topSubLaneSpace + row * (eventHeight + rowGap);
+      const baseY =
+        timeAxisOffset + topSubLaneSpace + row * (eventHeight + rowGap);
       return baseY + subLane * subLaneHeight;
     }
   }
@@ -1148,7 +1155,13 @@ export class TimelineRenderer {
     this.svg.appendChild(rect);
 
     // Label (if there's enough space)
-    const labelShown = this.renderPeriodLabel(period.name, startX, y, width, height);
+    const labelShown = this.renderPeriodLabel(
+      period.name,
+      startX,
+      y,
+      width,
+      height,
+    );
 
     // Add hover label for periods with hidden labels
     if (!labelShown) {
@@ -1431,9 +1444,7 @@ export class TimelineRenderer {
       const otherLabelPosition = labelPositions.get(other.id);
       if (otherLabelPosition && otherLabelPosition !== "hidden") {
         const otherLabelX =
-          otherLabelPosition === "right"
-            ? other.rightLabelX
-            : other.leftLabelX;
+          otherLabelPosition === "right" ? other.rightLabelX : other.leftLabelX;
         const otherLabelRight = otherLabelX + other.labelWidth;
         const otherLabelTop = other.labelY;
         const otherLabelBottom = other.labelY + other.labelHeight;
