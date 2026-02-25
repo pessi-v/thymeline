@@ -49,6 +49,9 @@ export class TimelineRenderer {
   private laneAssignments: import("../core/types").LaneAssignment[] = [];
   private rowMapping: Map<string, number> = new Map();
   private infoPopup: InfoPopup | null = null;
+  private scrollY = 0;
+  private contentHeight = 0;
+  private contentGroup: SVGGElement | null = null;
 
   constructor(selector: string | HTMLElement, options: RendererOptions = {}) {
     // Get container element
@@ -109,6 +112,7 @@ export class TimelineRenderer {
    */
   render(timelineData: TimelineData): void {
     this.data = timelineData;
+    this.scrollY = 0;
 
     // Update viewport with data and fit to show all
     this.viewport.setData(timelineData);
@@ -308,7 +312,8 @@ export class TimelineRenderer {
       numRows * (periodHeight + rowGap) +
       bottomSubLaneSpace +
       bottomPadding;
-    const height = Math.max(this.options.height, calculatedHeight);
+    this.contentHeight = Math.max(this.options.height, calculatedHeight);
+    const height = this.options.height;
 
     this.svg = createSvgElement("svg", {
       width: this.options.width,
@@ -329,6 +334,11 @@ export class TimelineRenderer {
         this.updateView();
         this.emit("pan", this.viewport.centerTime);
       },
+      onVerticalPan: (scrollY) => {
+        const maxScroll = Math.max(0, this.contentHeight - this.options.height);
+        this.scrollY = Math.max(-maxScroll, Math.min(0, scrollY));
+        this.updateView();
+      },
       onZoom: (zoomLevel, centerTime) => {
         this.setZoomLevel(zoomLevel, centerTime);
       },
@@ -337,6 +347,7 @@ export class TimelineRenderer {
       getCenterTime: () => this.viewport.centerTime,
       getTimeRange: () => this.viewport.endTime - this.viewport.startTime,
       getWidth: () => this.options.width,
+      getScrollY: () => this.scrollY,
     });
 
     this.container.appendChild(this.svg);
@@ -488,12 +499,41 @@ export class TimelineRenderer {
     // Clear existing content
     this.svg.innerHTML = "";
 
-    // Render row numbers (if enabled)
+    // Set up clip path that masks the scrollable content area below the time axis
+    const timeAxisOffset = 60;
+    const defs = createSvgElement("defs", {});
+    const clipPath = createSvgElement("clipPath", { id: "thymeline-content-clip" });
+    const clipRect = createRectElement(
+      0,
+      timeAxisOffset,
+      this.options.width,
+      this.options.height - timeAxisOffset,
+    );
+    clipPath.appendChild(clipRect);
+    defs.appendChild(clipPath);
+    this.svg.appendChild(defs);
+
+    // Create a fixed clip wrapper (no transform) so the clip rect stays in SVG coordinates.
+    // If the clip-path were on the scrolling group itself, it would move with the content
+    // and always show the same elements regardless of scroll position.
+    const clipWrapper = createSvgElement("g", {
+      "clip-path": "url(#thymeline-content-clip)",
+    });
+    this.svg.appendChild(clipWrapper);
+
+    // Create the scrollable content group (transform only, no clip-path)
+    const contentGroup = createSvgElement("g", {
+      transform: `translate(0, ${this.scrollY})`,
+    });
+    this.contentGroup = contentGroup;
+    clipWrapper.appendChild(contentGroup);
+
+    // Render row numbers into content group (if enabled)
     if (this.options.showRowNumbers) {
       this.renderRowNumbers();
     }
 
-    // Render time axis
+    // Render time axis fixed on top (appended after contentGroup so it renders above it)
     this.timeAxisRenderer.render(this.svg, this.viewport);
 
     // Render undefined connectors first (behind all other elements)
@@ -518,7 +558,7 @@ export class TimelineRenderer {
     // Render events with smart label positioning
     this.renderEventsWithLabelPositioning(this.data.events);
 
-    // Render today line marker
+    // Render today line marker (fixed, on top of everything)
     this.timeAxisRenderer.renderTodayLine(this.svg, this.viewport);
   }
 
@@ -526,7 +566,7 @@ export class TimelineRenderer {
    * Render row numbers for debugging
    */
   private renderRowNumbers(): void {
-    if (!this.svg) return;
+    if (!this.contentGroup) return;
 
     const numRows =
       this.rowMapping.size > 0 ? Math.max(...this.rowMapping.values()) + 1 : 0;
@@ -555,7 +595,7 @@ export class TimelineRenderer {
         stroke: "#ccc",
         "stroke-width": 0.5,
       });
-      this.svg.appendChild(rect);
+      this.contentGroup.appendChild(rect);
 
       // Row number text
       const text = createTextElement(row.toString(), {
@@ -565,7 +605,7 @@ export class TimelineRenderer {
         "font-size": 10,
         "font-family": "monospace",
       });
-      this.svg.appendChild(text);
+      this.contentGroup.appendChild(text);
     }
   }
 
@@ -658,7 +698,7 @@ export class TimelineRenderer {
       this.emit("itemClick", period);
     });
 
-    this.svg.appendChild(rect);
+    this.contentGroup!.appendChild(rect);
 
     // Label (if there's enough space)
     const labelShown = this.renderPeriodLabel(
@@ -674,7 +714,7 @@ export class TimelineRenderer {
       let hoverLabel: SVGTextElement | null = null;
 
       rect.addEventListener("mouseenter", () => {
-        if (!this.svg) return;
+        if (!this.contentGroup) return;
 
         hoverLabel = createTextElement(period.name, {
           x: startX + width / 2,
@@ -684,7 +724,7 @@ export class TimelineRenderer {
           "font-weight": "bold",
           "pointer-events": "none",
         });
-        this.svg.appendChild(hoverLabel);
+        this.contentGroup.appendChild(hoverLabel);
       });
 
       rect.addEventListener("mouseleave", () => {
@@ -707,7 +747,7 @@ export class TimelineRenderer {
     width: number,
     height: number,
   ): boolean {
-    if (!this.svg) return false;
+    if (!this.svg || !this.contentGroup) return false;
 
     const padding = 8; // Horizontal padding inside the period
     const availableWidth = width - padding * 2;
@@ -718,7 +758,7 @@ export class TimelineRenderer {
     const fontSize = 11;
     const lineHeight = fontSize + 2;
 
-    // Create a temporary text element to measure text width
+    // Create a temporary text element to measure text width (appended to svg for getBBox())
     const measureText = (str: string): number => {
       const temp = createTextElement(str, {
         x: 0,
@@ -746,7 +786,7 @@ export class TimelineRenderer {
         "font-weight": "bold",
         "pointer-events": "none",
       });
-      this.svg.appendChild(text);
+      this.contentGroup.appendChild(text);
       return true;
     }
 
@@ -791,7 +831,7 @@ export class TimelineRenderer {
       "font-weight": "bold",
       "pointer-events": "none",
     });
-    this.svg.appendChild(text1);
+    this.contentGroup.appendChild(text1);
 
     const text2 = createTextElement(line2, {
       x: centerX,
@@ -802,7 +842,7 @@ export class TimelineRenderer {
       "font-weight": "bold",
       "pointer-events": "none",
     });
-    this.svg.appendChild(text2);
+    this.contentGroup.appendChild(text2);
 
     return true;
   }
@@ -973,7 +1013,7 @@ export class TimelineRenderer {
       this.emit("itemClick", event);
     });
 
-    this.svg.appendChild(circle);
+    this.contentGroup!.appendChild(circle);
 
     // Label (only if not hidden)
     if (labelPosition !== "hidden") {
@@ -985,7 +1025,7 @@ export class TimelineRenderer {
         fill: "#333",
         "pointer-events": "none",
       });
-      this.svg.appendChild(text);
+      this.contentGroup!.appendChild(text);
     }
   }
 
@@ -1063,10 +1103,10 @@ export class TimelineRenderer {
       opacity: 0.85,
     });
 
-    // Append all elements to SVG and add connector ID
+    // Append all elements to content group and add connector ID
     elements.forEach((element) => {
       element.setAttribute("id", connector.id);
-      this.svg!.appendChild(element);
+      this.contentGroup!.appendChild(element);
     });
   }
 }

@@ -8,12 +8,14 @@
  */
 export interface InteractionCallbacks {
   onPan: (centerTime: number) => void;
+  onVerticalPan: (scrollY: number) => void;
   onZoom: (zoomLevel: number, centerTime: number) => void;
   xToTime: (x: number) => number;
   getZoomLevel: () => number;
   getCenterTime: () => number;
   getTimeRange: () => number;
   getWidth: () => number;
+  getScrollY: () => number;
 }
 
 /**
@@ -38,7 +40,9 @@ export class InteractionHandler {
 
   private isDragging = false;
   private startX = 0;
+  private startY = 0;
   private startCenterTime = 0;
+  private startScrollY = 0;
   private lastClickTime = 0;
 
   private boundHandlers: {
@@ -109,7 +113,9 @@ export class InteractionHandler {
     this.lastClickTime = currentTime;
     this.isDragging = true;
     this.startX = e.clientX;
+    this.startY = e.clientY;
     this.startCenterTime = this.callbacks.getCenterTime();
+    this.startScrollY = this.callbacks.getScrollY();
     this.svg.style.cursor = "grabbing";
   }
 
@@ -124,8 +130,10 @@ export class InteractionHandler {
     const width = this.callbacks.getWidth();
     const deltaTime = (-deltaX / width) * timeRange;
     const newCenterTime = this.startCenterTime + deltaTime;
-
     this.callbacks.onPan(newCenterTime);
+
+    const deltaY = e.clientY - this.startY;
+    this.callbacks.onVerticalPan(this.startScrollY + deltaY);
   }
 
   /**
