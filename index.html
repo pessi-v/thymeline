@@ -188,7 +188,11 @@
           </select>
         </label>
         <label for="row-numbers-toggle" style="margin-right: 10px">
-          <input type="checkbox" id="row-numbers-toggle" style="margin-left: 5px" />
+          <input
+            type="checkbox"
+            id="row-numbers-toggle"
+            style="margin-left: 5px"
+          />
           <strong>Show Row Numbers</strong>
         </label>
         <button id="pan-left">← Pan Left</button>
@@ -211,39 +215,47 @@
     </div>
 
     <script type="module">
-      import { TimelineRenderer, validateTimelineData, formatValidationResult, PERIOD_LAYOUT_ALGORITHMS, CONNECTOR_RENDERERS } from "./src/index.ts";
+      import {
+        TimelineRenderer,
+        validateTimelineData,
+        formatValidationResult,
+        PERIOD_LAYOUT_ALGORITHMS,
+        CONNECTOR_RENDERERS,
+      } from "./src/index.ts";
 
       // Use Vite's glob import to automatically discover all example JSON files
-      const exampleModules = import.meta.glob('./examples/*.json');
+      const exampleModules = import.meta.glob("./examples/*.json");
 
       // Extract filenames and create friendly names
-      const examples = Object.keys(exampleModules).map(path => {
-        const filename = path.replace('./examples/', '');
-        const name = filename
-          .replace('.json', '')
-          .split('-')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
+      const examples = Object.keys(exampleModules)
+        .map((path) => {
+          const filename = path.replace("./examples/", "");
+          const name = filename
+            .replace(".json", "")
+            .split("-")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ");
 
-        return {
-          path,
-          filename,
-          name
-        };
-      }).sort((a, b) => {
-        // Sort with 'timeline-data' first, then alphabetically
-        if (a.filename === 'timeline-data.json') return -1;
-        if (b.filename === 'timeline-data.json') return 1;
-        return a.name.localeCompare(b.name);
-      });
+          return {
+            path,
+            filename,
+            name,
+          };
+        })
+        .sort((a, b) => {
+          // Sort with 'timeline-data' first, then alphabetically
+          if (a.filename === "timeline-data.json") return -1;
+          if (b.filename === "timeline-data.json") return 1;
+          return a.name.localeCompare(b.name);
+        });
 
       // Populate the timeline selector with discovered examples
       function populateTimelineSelector() {
-        const selector = document.getElementById('timeline-selector');
-        selector.innerHTML = '';
+        const selector = document.getElementById("timeline-selector");
+        selector.innerHTML = "";
 
         examples.forEach((example, index) => {
-          const option = document.createElement('option');
+          const option = document.createElement("option");
           option.value = example.path;
           option.textContent = example.name;
           selector.appendChild(option);
@@ -252,11 +264,11 @@
 
       // Populate the layout algorithm selector
       function populateLayoutSelector() {
-        const selector = document.getElementById('layout-selector');
-        selector.innerHTML = '';
+        const selector = document.getElementById("layout-selector");
+        selector.innerHTML = "";
 
         Object.entries(PERIOD_LAYOUT_ALGORITHMS).forEach(([key, algorithm]) => {
-          const option = document.createElement('option');
+          const option = document.createElement("option");
           option.value = key;
           option.textContent = algorithm.name;
           option.title = algorithm.description;
@@ -266,11 +278,11 @@
 
       // Populate the connector renderer selector
       function populateConnectorSelector() {
-        const selector = document.getElementById('connector-selector');
-        selector.innerHTML = '';
+        const selector = document.getElementById("connector-selector");
+        selector.innerHTML = "";
 
         Object.entries(CONNECTOR_RENDERERS).forEach(([key, renderer]) => {
-          const option = document.createElement('option');
+          const option = document.createElement("option");
           option.value = key;
           option.textContent = renderer.name;
           option.title = renderer.description;
@@ -279,19 +291,24 @@
       }
 
       // Function to load a timeline
-      function loadTimeline(url, layoutAlgorithm = null, connectorRenderer = null) {
+      function loadTimeline(
+        url,
+        layoutAlgorithm = null,
+        connectorRenderer = null,
+      ) {
         document.getElementById("status").textContent = "Loading timeline...";
 
         // Get current layout algorithm if not specified
         if (layoutAlgorithm === null) {
           const layoutSelector = document.getElementById("layout-selector");
-          layoutAlgorithm = layoutSelector.value || 'greedy';
+          layoutAlgorithm = layoutSelector.value || "greedy";
         }
 
         // Get current connector renderer if not specified
         if (connectorRenderer === null) {
-          const connectorSelector = document.getElementById("connector-selector");
-          connectorRenderer = connectorSelector.value || 'sigmoid';
+          const connectorSelector =
+            document.getElementById("connector-selector");
+          connectorRenderer = connectorSelector.value || "sigmoid";
         }
 
         // Get current row numbers toggle state
@@ -306,18 +323,21 @@
 
             if (!validation.valid) {
               const errorMsg = formatValidationResult(validation);
-              console.error('Timeline validation failed:\n', errorMsg);
+              console.error("Timeline validation failed:\n", errorMsg);
               document.getElementById("status").textContent =
                 `Validation failed: ${validation.errors.length} error(s) found. See console for details.`;
               document.getElementById("debug-info").textContent =
-                validation.errors[0]?.message || 'Unknown error';
-              alert('Timeline validation failed:\n\n' + errorMsg);
+                validation.errors[0]?.message || "Unknown error";
+              alert("Timeline validation failed:\n\n" + errorMsg);
               return;
             }
 
             // Show warnings if any
             if (validation.warnings.length > 0) {
-              console.warn('Timeline validation warnings:\n', formatValidationResult(validation));
+              console.warn(
+                "Timeline validation warnings:\n",
+                formatValidationResult(validation),
+              );
             }
 
             // Destroy existing renderer if it exists
@@ -335,10 +355,11 @@
               width: config.width || containerWidth,
               height: config.height || 500,
               initialStartTime: config.initialStartTime || {
-                year: 100,
-                era: "BCE",
+                value: 100,
+                unit: "bce",
               },
-              initialEndTime: config.initialEndTime || Temporal.Now.instant().toString(),
+              initialEndTime:
+                config.initialEndTime || Temporal.Now.instant().toString(),
               theme: config.theme || "light",
               constraints: config.constraints,
               periodLayoutAlgorithm: layoutAlgorithm,
@@ -415,7 +436,11 @@
         .addEventListener("change", (e) => {
           const timelineSelector = document.getElementById("timeline-selector");
           const layoutSelector = document.getElementById("layout-selector");
-          loadTimeline(timelineSelector.value, layoutSelector.value, e.target.value);
+          loadTimeline(
+            timelineSelector.value,
+            layoutSelector.value,
+            e.target.value,
+          );
         });
 
       // Set up controls
@@ -445,11 +470,13 @@
       });
 
       // Set up row numbers toggle
-      document.getElementById("row-numbers-toggle").addEventListener("change", (e) => {
-        if (window.renderer) {
-          window.renderer.setShowRowNumbers(e.target.checked);
-        }
-      });
+      document
+        .getElementById("row-numbers-toggle")
+        .addEventListener("change", (e) => {
+          if (window.renderer) {
+            window.renderer.setShowRowNumbers(e.target.checked);
+          }
+        });
 
       // Update status display
       function updateStatus() {

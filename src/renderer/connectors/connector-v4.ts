@@ -1,0 +1,203 @@
+/**
+ * Connector v4
+ * - "defined" connectors: sigmoid with limited curve distance (like sigmoidHorizontalLimitedConnector)
+ * - "undefined" connectors: full sigmoid curve (like sigmoidHorizontalConnector)
+ */
+
+import * as d3 from "d3";
+import type { ConnectorRenderer, ConnectorRenderContext } from "./types";
+
+export const connectorV4: ConnectorRenderer = {
+  name: "Connector v4",
+  description:
+    "Limited sigmoid for defined connectors, full sigmoid for undefined connectors",
+
+  render(ctx: ConnectorRenderContext): SVGElement[] {
+    if (ctx.connectorType === "undefined") {
+      return renderFullSigmoid(ctx);
+    } else {
+      return renderLimitedSigmoid(ctx);
+    }
+  },
+};
+
+/**
+ * Render full sigmoid curve (for undefined connectors)
+ */
+function renderFullSigmoid(ctx: ConnectorRenderContext): SVGElement[] {
+  const elements: SVGElement[] = [];
+
+  // Adjust connection points:
+  // - Start 5px to the left of the "from" period
+  // - End 5px to the right of the "to" period
+  const fromX = ctx.fromX - 5;
+  const fromY = ctx.fromY;
+  const toX = ctx.toX + 5;
+  const toY = ctx.toY;
+
+  const pathData = createSigmoidPath(fromX, fromY, toX, toY);
+
+  if (!pathData) {
+    // Fallback to simple line if path generation fails
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", `M ${fromX},${fromY} L ${toX},${toY}`);
+    path.setAttribute("stroke", ctx.color);
+    path.setAttribute("stroke-width", "3");
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke-dasharray", "5,5");
+    path.setAttribute("stroke-opacity", "0.5");
+    elements.push(path);
+    return elements;
+  }
+
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", pathData);
+  path.setAttribute("stroke", ctx.color);
+  path.setAttribute("stroke-width", "3");
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke-dasharray", "5,5");
+  path.setAttribute("stroke-opacity", "0.5");
+
+  elements.push(path);
+  return elements;
+}
+
+/**
+ * Render limited sigmoid curve (for defined connectors)
+ */
+function renderLimitedSigmoid(ctx: ConnectorRenderContext): SVGElement[] {
+  const elements: SVGElement[] = [];
+
+  // Adjust connection points:
+  // - Start 5px to the left of the "from" period
+  // - End 5px to the right of the "to" period
+  const fromX = ctx.fromX - 5;
+  const toX = ctx.toX + 5;
+
+  // Adjust Y position on 'from' side based on relative position
+  let fromY = ctx.fromY;
+  if (ctx.toY < ctx.fromY) {
+    // Child is above parent - move start point up 5px
+    fromY = ctx.fromY - 5;
+  } else if (ctx.toY > ctx.fromY) {
+    // Child is below parent - move start point down 5px
+    fromY = ctx.fromY + 5;
+  }
+  // If toY === fromY, keep fromY centered (no adjustment)
+
+  const toY = ctx.toY;
+
+  // Calculate dimensions
+  const horizontalDistance = Math.abs(toX - fromX);
+  const maxCurveDistance = 50; // Maximum horizontal distance for the curve
+
+  // If the total distance is less than the limit, use full sigmoid curve
+  if (horizontalDistance <= maxCurveDistance) {
+    const pathData = createSigmoidPath(fromX, fromY, toX, toY);
+
+    if (!pathData) {
+      // Fallback to simple line if path generation fails
+      const path = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "path",
+      );
+      path.setAttribute("d", `M ${fromX},${fromY} L ${toX},${toY}`);
+      path.setAttribute("stroke", ctx.color);
+      path.setAttribute("stroke-width", "5");
+      path.setAttribute("fill", "none");
+      path.setAttribute("stroke-opacity", ctx.opacity.toString());
+      elements.push(path);
+      return elements;
+    }
+
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", pathData);
+    path.setAttribute("stroke", ctx.color);
+    path.setAttribute("stroke-width", "5");
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke-opacity", ctx.opacity.toString());
+
+    elements.push(path);
+    return elements;
+  }
+
+  // Otherwise, curve to a midpoint and then continue as a straight line
+  const isGoingRight = toX > fromX;
+  const curveEndX = isGoingRight
+    ? fromX + maxCurveDistance
+    : fromX - maxCurveDistance;
+
+  // Create sigmoid curve from start to curve end point
+  const sigmoidPath = createSigmoidPath(fromX, fromY, curveEndX, toY);
+
+  if (!sigmoidPath) {
+    // Fallback to simple line
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", `M ${fromX},${fromY} L ${toX},${toY}`);
+    path.setAttribute("stroke", ctx.color);
+    path.setAttribute("stroke-width", "5");
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke-opacity", ctx.opacity.toString());
+    elements.push(path);
+    return elements;
+  }
+
+  // Combine sigmoid curve with straight line continuation into single path
+  const combinedPath = `${sigmoidPath} L ${toX},${toY}`;
+
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", combinedPath);
+  path.setAttribute("stroke", ctx.color);
+  path.setAttribute("stroke-width", "5");
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke-opacity", ctx.opacity.toString());
+
+  elements.push(path);
+  return elements;
+}
+
+/**
+ * Create a sigmoid path from (fromX, fromY) to (toX, toY)
+ */
+function createSigmoidPath(
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+): string | null {
+  // Sigmoid function: 1 / (1 + e^(-2*t))
+  const sigmoid = (t: number) => 1 / (1 + Math.exp(-2 * t));
+
+  // Generate sigmoid data points
+  const limit = 3;
+  const step = 0.1;
+  const sigmoidData: [number, number][] = [];
+
+  for (let t = -limit; t <= limit; t += step) {
+    const sigmoidValue = sigmoid(t);
+    sigmoidData.push([sigmoidValue, t]);
+  }
+
+  // Create scales to map sigmoid values to our connector coordinates
+  const scaleX = d3
+    .scaleLinear()
+    .domain([0, 1]) // Normalized horizontal progress
+    .range([fromX, toX]);
+
+  const scaleY = d3
+    .scaleLinear()
+    .domain([0, 1]) // Sigmoid output range
+    .range([fromY, toY]);
+
+  // Create D3 line generator
+  const lineGenerator = d3
+    .line<[number, number]>()
+    .x((d) => {
+      // Map t value to 0-1 range for horizontal positioning
+      const normalizedT = (d[1] + limit) / (2 * limit);
+      return scaleX(normalizedT);
+    })
+    .y((d) => scaleY(d[0])); // Sigmoid controls vertical position
+
+  return lineGenerator(sigmoidData);
+}

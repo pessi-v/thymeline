@@ -8,8 +8,7 @@
 export type TimeInput =
   | string // ISO 8601 date string
   | Temporal.Instant // Temporal Instant for precise UTC timestamps
-  | { year: number; era: 'BCE' | 'CE' }
-  | { value: number; unit: 'mya' | 'years-ago' }
+  | { value: number; unit: 'mya' | 'years-ago' | 'bce' | 'ce' }
   | { localTime: string; timezone: string };
 
 /**
@@ -19,6 +18,7 @@ export interface TimelineEvent {
   id: string;
   name: string;
   time: TimeInput;
+  relates_to?: string; // Optional reference to a period id - event will render below that period
   info?: string;
   metadata?: Record<string, any>;
 }
@@ -75,9 +75,7 @@ export interface TimelineData {
 export interface RenderConstraints {
   minEventWidth: number; // Minimum pixel width for events
   maxEventWidth: number; // Maximum pixel width for events
-  minPeriodHeight: number; // Minimum pixel height for periods
-  maxPeriodHeight: number; // Maximum pixel height for periods
-  laneHeight: number; // Vertical spacing between lanes
+  periodHeight: number; // Pixel height for periods
   laneGap: number; // Gap between lanes
 }
 
@@ -112,6 +110,7 @@ export interface LaneAssignment {
   startTime: NormalizedTime;
   endTime: NormalizedTime;
   type?: 'period' | 'event';
+  subLane?: number; // For events: sub-lane within the period's vertical space (-1=above, 0=below, 1=further below)
 }
 
 /**
