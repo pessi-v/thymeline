@@ -1062,9 +1062,9 @@ export class TimelineRenderer {
     const toRow = this.rowMapping.get(connector.toId);
     if (fromRow === undefined || toRow === undefined) return;
 
-    // Get the "from" period to extract its color
     const fromPeriod = this.data.periods.find((p) => p.id === connector.fromId);
-    const periodColor = fromPeriod ? "#000" : "#f587f3"; // Default to black for periods
+    const toPeriod = this.data.periods.find((p) => p.id === connector.toId);
+    const periodColor = "#000";
 
     // Calculate the connection point on the "from" period
     // If "to" starts before "from" ends (overlapping periods),
@@ -1103,10 +1103,38 @@ export class TimelineRenderer {
       opacity: 0.85,
     });
 
-    // Append all elements to content group and add connector ID
+    // Group the connector elements with invisible widened hit areas
+    // so the thin curve is comfortably clickable
+    const group = createSvgElement("g", { id: connector.id });
+    group.style.cursor = "pointer";
+
     elements.forEach((element) => {
-      element.setAttribute("id", connector.id);
-      this.contentGroup!.appendChild(element);
+      group.appendChild(element);
+      if (element.tagName === "path") {
+        const hitArea = element.cloneNode() as SVGElement;
+        hitArea.setAttribute("stroke", "transparent");
+        hitArea.setAttribute("stroke-width", "14");
+        hitArea.setAttribute("stroke-dasharray", "");
+        hitArea.setAttribute("fill", "none");
+        hitArea.style.pointerEvents = "stroke";
+        group.appendChild(hitArea);
+      }
     });
+
+    group.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (this.infoPopup) {
+        const fromName = fromPeriod?.name ?? connector.fromId;
+        const toName = toPeriod?.name ?? connector.toId;
+        let content = `${fromName} → ${toName}`;
+        if (connector.info) {
+          content += `\n\n${connector.info}`;
+        }
+        this.infoPopup.show(content, e.clientX, e.clientY);
+      }
+      this.emit("itemClick", connector);
+    });
+
+    this.contentGroup!.appendChild(group);
   }
 }

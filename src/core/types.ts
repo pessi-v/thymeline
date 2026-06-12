@@ -44,6 +44,7 @@ export interface TimelineConnector {
   fromId: string; // References period id
   toId: string; // References period id
   type: 'defined' | 'undefined'; // e.g., succession vs. lineage
+  info?: string;
   metadata?: Record<string, any>;
 }
 
@@ -128,5 +129,5 @@ export interface ViewportState {
  */
 export type ZoomCallback = (zoomLevel: number) => void;
 export type PanCallback = (centerTime: number) => void;
-export type ItemClickCallback = (item: TimelineEvent | TimelinePeriod) => void;
-export type ItemHoverCallback = (item: TimelineEvent | TimelinePeriod | null) => void;
+export type ItemClickCallback = (item: TimelineEvent | TimelinePeriod | TimelineConnector) => void;
+export type ItemHoverCallback = (item: TimelineEvent | TimelinePeriod | TimelineConnector | null) => void;

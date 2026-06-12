@@ -353,44 +353,24 @@ function placeTrunkOnLane(
 }
 
 /**
- * Layout a single tree using succession-based algorithm
+ * Layout a single tree in isolation, using relative lanes.
+ * The main trunk sits on lane 0; branches spread to negative and positive
+ * lanes around it. Only intra-tree collisions are considered here — the
+ * whole shape is later shifted into the global layout as a unit.
  */
-function layoutTree(
+function layoutTreeRelative(
   tree: PeriodTree,
-  startLane: number,
-  existingPlacements: PlacedPeriod[],
   periodMap: Map<string, { name: string; startTime: NormalizedTime; endTime: NormalizedTime }>
-): { placements: PlacedPeriod[]; minLane: number; maxLane: number } {
+): PlacedPeriod[] {
   const placements: PlacedPeriod[] = [];
+  const maxAttempts = 100;
 
   if (__DEBUG__) console.log(`\n🌲 Building trunk for tree: ${tree.root.id} (${tree.root.name})`);
 
-  // Build main trunk
+  // Build main trunk on relative lane 0
   const mainTrunk = buildTrunk(tree.root);
   if (__DEBUG__) console.log(`  🎯 Main trunk has ${mainTrunk.length} periods`);
-
-  // Find a lane where the trunk fits, starting from startLane
-  let trunkLane = startLane;
-  const maxAttempts = 100;
-  let attempts = 0;
-
-  while (attempts < maxAttempts) {
-    if (trunkLane < 0) {
-      if (__DEBUG__) console.log(`  🔽 Need negative lane (${trunkLane}), pushing tree down`);
-      trunkLane = 0;
-      attempts++;
-      continue;
-    }
-
-    const allPlaced = [...existingPlacements, ...placements];
-    if (canPlaceTrunk(mainTrunk, trunkLane, allPlaced, periodMap)) {
-      placeTrunkOnLane(mainTrunk, trunkLane, placements);
-      break;
-    }
-
-    trunkLane++;
-    attempts++;
-  }
+  placeTrunkOnLane(mainTrunk, 0, placements);
 
   // Track trunk lanes and their placement direction
   interface TrunkInfo {
@@ -399,9 +379,7 @@ function layoutTree(
     isAboveParent: boolean | null; // null for main trunk
   }
 
-  const trunkQueue: TrunkInfo[] = [{ trunk: mainTrunk, parentLane: trunkLane, isAboveParent: null }];
-  const trunkLanes = new Map<string, number>(); // Map trunk root ID to its lane
-  trunkLanes.set(mainTrunk[0]!.id, trunkLane);
+  const trunkQueue: TrunkInfo[] = [{ trunk: mainTrunk, parentLane: 0, isAboveParent: null }];
 
   let queueIndex = 0;
   while (queueIndex < trunkQueue.length) {
@@ -422,66 +400,38 @@ function layoutTree(
 
     for (let i = 0; i < currentBranches.length; i++) {
       const branch = currentBranches[i]!;
-      const branchRootId = branch[0]!.id;
       if (__DEBUG__) console.log(`\n  🔸 Placing branch ${i + 1}/${currentBranches.length}: ${branch.map(n => n.name).join(' → ')}`);
 
-      let branchLane: number;
       let placed = false;
-      attempts = 0;
+      let attempts = 0;
 
       while (!placed && attempts < maxAttempts) {
-        if (placeAbove) {
-          branchLane = parentLane + aboveOffset;
-        } else {
-          branchLane = parentLane - belowOffset;
-        }
+        const branchLane = placeAbove
+          ? parentLane + aboveOffset
+          : parentLane - belowOffset;
 
-        if (branchLane < 0) {
-          if (__DEBUG__) console.log(`    🔽 Need negative lane (${branchLane}), pushing whole tree down`);
-          // Push entire tree down and restart
-          trunkLane++;
-          placements.length = 0;
-          placeTrunkOnLane(mainTrunk, trunkLane, placements);
-
-          // Reset everything
-          trunkQueue.length = 1;
-          trunkQueue[0] = { trunk: mainTrunk, parentLane: trunkLane, isAboveParent: null };
-          trunkLanes.clear();
-          trunkLanes.set(mainTrunk[0]!.id, trunkLane);
-          queueIndex = -1; // Will be incremented to 0
-          break;
-        }
-
-        const allPlaced = [...existingPlacements, ...placements];
-        if (canPlaceTrunk(branch, branchLane, allPlaced, periodMap)) {
+        if (canPlaceTrunk(branch, branchLane, placements, periodMap)) {
           placeTrunkOnLane(branch, branchLane, placements);
           placed = true;
 
-          // Track this branch's lane
-          trunkLanes.set(branchRootId, branchLane);
-
           // Add to queue for processing its sub-branches
-          const branchIsAbove = branchLane > parentLane;
-          trunkQueue.push({ trunk: branch, parentLane: branchLane, isAboveParent: branchIsAbove });
+          trunkQueue.push({
+            trunk: branch,
+            parentLane: branchLane,
+            isAboveParent: branchLane > parentLane,
+          });
+        }
 
-          // Advance offset for next branch
-          if (placeAbove) {
-            aboveOffset++;
-          } else {
-            belowOffset++;
-          }
-
-          // Only alternate for main trunk; sub-branches continue in same direction
-          if (isMainTrunk) {
-            placeAbove = !placeAbove;
-          }
+        // Advance offset (away from parent) whether placed or not
+        if (placeAbove) {
+          aboveOffset++;
         } else {
-          // Try moving away from parent
-          if (placeAbove) {
-            aboveOffset++;
-          } else {
-            belowOffset++;
-          }
+          belowOffset++;
+        }
+
+        // Only alternate for main trunk; sub-branches continue in same direction
+        if (placed && isMainTrunk) {
+          placeAbove = !placeAbove;
         }
 
         attempts++;
@@ -491,12 +441,46 @@ function layoutTree(
     queueIndex++;
   }
 
-  // Calculate bounds
-  const lanes = placements.map(p => p.lane);
-  const minLane = lanes.length > 0 ? Math.min(...lanes) : trunkLane;
-  const maxLane = lanes.length > 0 ? Math.max(...lanes) : trunkLane;
+  return placements;
+}
 
-  return { placements, minLane, maxLane };
+/**
+ * Shift a tree's relative placements into the global layout as a unit,
+ * at the lowest base lane where no period collides with existing placements.
+ * This lets trees that are disjoint in time share lanes instead of stacking.
+ */
+function placeTreeAtLowestOffset(
+  relativePlacements: PlacedPeriod[],
+  existingPlacements: PlacedPeriod[]
+): PlacedPeriod[] {
+  const minLane = Math.min(...relativePlacements.map(p => p.lane));
+  const maxExistingLane = existingPlacements.length > 0
+    ? Math.max(...existingPlacements.map(p => p.lane))
+    : -1;
+
+  // base = maxExistingLane + 1 always fits, so the loop terminates
+  for (let base = 0; ; base++) {
+    const shifted = relativePlacements.map(p => ({ ...p, lane: p.lane - minLane + base }));
+    const fits = shifted.every(
+      p => !hasCollision(p.startTime, p.endTime, p.lane, existingPlacements)
+    );
+    if (fits || base > maxExistingLane) {
+      if (__DEBUG__) console.log(`  📍 Tree placed at base lane ${base}`);
+      return shifted;
+    }
+  }
+}
+
+/**
+ * Remap lanes so the used lane numbers are consecutive, removing empty lanes
+ */
+function compactLanes(placements: PlacedPeriod[]): void {
+  const usedLanes = [...new Set(placements.map(p => p.lane))].sort((a, b) => a - b);
+  const laneMap = new Map(usedLanes.map((lane, index) => [lane, index]));
+
+  for (const placement of placements) {
+    placement.lane = laneMap.get(placement.lane)!;
+  }
 }
 
 /**
@@ -558,21 +542,19 @@ export const successionPeriodLayout: PeriodLayoutAlgorithm = {
       if (__DEBUG__) console.log(`  Tree ${idx}: root=${tree.root.id} (${tree.root.name}), nodes=${tree.allNodeIds.size}`);
     });
 
-    // Layout trees (already sorted by age)
+    // Layout trees (already sorted by age), packing each one as high as it fits
     const allPlacements: PlacedPeriod[] = [];
-    let nextStartLane = 0;
 
     for (let i = 0; i < trees.length; i++) {
       const tree = trees[i]!;
-      if (__DEBUG__) console.log(`\n📐 Laying out Tree ${i} (root: ${tree.root.id} "${tree.root.name}") starting at lane ${nextStartLane}`);
+      if (__DEBUG__) console.log(`\n📐 Laying out Tree ${i} (root: ${tree.root.id} "${tree.root.name}")`);
 
-      const { placements, maxLane } = layoutTree(tree, nextStartLane, allPlacements, periodMap);
+      const relativePlacements = layoutTreeRelative(tree, periodMap);
+      const placements = placeTreeAtLowestOffset(relativePlacements, allPlacements);
 
       if (__DEBUG__) console.log(`  ✅ Tree ${i} placed:`, placements.map(p => `${p.id}:L${p.lane}`).join(', '));
-      if (__DEBUG__) console.log(`  📏 Lanes used: ${Math.min(...placements.map(p => p.lane))} to ${maxLane}`);
 
       allPlacements.push(...placements);
-      nextStartLane = maxLane + 1;
     }
 
     // Place individual periods
@@ -584,6 +566,9 @@ export const successionPeriodLayout: PeriodLayoutAlgorithm = {
     }
 
     allPlacements.push(...individualPlacements);
+
+    // Remove empty lanes left over from branch offset gaps
+    compactLanes(allPlacements);
 
     // Convert to LaneAssignment format
     const result = allPlacements.map(p => ({
