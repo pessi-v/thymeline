@@ -24,6 +24,7 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "lint": "tsc --noEmit",
+    "validate": "npx tsx scripts/validate-timeline.ts",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

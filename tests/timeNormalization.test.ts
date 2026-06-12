@@ -7,8 +7,8 @@ import { normalizeTime, formatTime, determineTimeScale } from '../src/utils/time
 
 describe('normalizeTime', () => {
   it('should normalize BCE/CE format', () => {
-    expect(normalizeTime({ year: 500, era: 'BCE' })).toBe(-500);
-    expect(normalizeTime({ year: 1492, era: 'CE' })).toBe(1492);
+    expect(normalizeTime({ value: 500, unit: 'bce' })).toBe(-500);
+    expect(normalizeTime({ value: 1492, unit: 'ce' })).toBe(1492);
   });
 
   it('should normalize geological time (mya)', () => {

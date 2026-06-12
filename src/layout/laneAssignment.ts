@@ -38,7 +38,8 @@ export function assignLanes(
   const eventLaneOffset = maxPeriodLane + 1;
 
   // Assign events using the event layout algorithm
-  const eventAssignments = assignEventLanes(events, eventLaneOffset);
+  // Pass period assignments so events with relates_to can be positioned under their related period
+  const eventAssignments = assignEventLanes(events, eventLaneOffset, periodAssignments);
 
   // Combine assignments
   return [...periodAssignments, ...eventAssignments];

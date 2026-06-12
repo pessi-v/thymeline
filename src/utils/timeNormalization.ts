@@ -45,20 +45,21 @@ export function normalizeTime(input: TimeInput): NormalizedTime {
     return instantToYears(input);
   }
 
-  // Handle { year: number; era: 'BCE' | 'CE' }
-  if ('year' in input && 'era' in input) {
-    return input.era === 'CE' ? input.year : -input.year;
-  }
-
-  // Handle { value: number; unit: 'mya' | 'years-ago' }
+  // Handle { value: number; unit: 'mya' | 'years-ago' | 'bce' | 'ce' }
   if ('value' in input && 'unit' in input) {
     const currentYear = Temporal.Now.plainDateISO().year;
     if (input.unit === 'mya') {
       // Million years ago
       return -(input.value * 1_000_000);
-    } else {
+    } else if (input.unit === 'years-ago') {
       // Years ago from current year
       return currentYear - input.value;
+    } else if (input.unit === 'bce') {
+      // BCE year (negative normalized time)
+      return -input.value;
+    } else if (input.unit === 'ce') {
+      // CE year (positive normalized time)
+      return input.value;
     }
   }
 
